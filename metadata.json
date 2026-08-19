@@ -1,0 +1,8 @@
+{
+  "name": "GoStars Academy",
+  "description": "The official web platform and educational architecture for GoStars Academy (أكاديمية جو ستارز) - 'آفاق واسعة.. لعلم لا ينتهي'.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
