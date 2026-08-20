@@ -232,54 +232,59 @@ export class CmsDataEngine {
       return this.cachedData;
     }
 
-    // Try LocalStorage first for instant rendering
+    // Try LocalStorage first for instant 0ms rendering
     try {
       const local = localStorage.getItem(CMS_STORAGE_KEY);
       if (local) {
         this.cachedData = JSON.parse(local);
+        return this.cachedData!;
       }
     } catch {
       // ignore localStorage errors
     }
 
-    try {
-      const docRef = doc(db, "site_content", "main_config");
-      const snap = await getDoc(docRef);
+    // Return instant default immediately so UI renders with 0 delay,
+    // while firestore doc is fetched/seeded asynchronously in background
+    this.cachedData = DEFAULT_CMS_CONTENT;
+    
+    // Non-blocking background fetch
+    (async () => {
+      try {
+        const docRef = doc(db, "site_content", "main_config");
+        const snap = await getDoc(docRef);
 
-      if (snap.exists()) {
-        const remoteData = snap.data() as SiteContentSettings;
-        const merged: SiteContentSettings = {
-          ...DEFAULT_CMS_CONTENT,
-          ...remoteData,
-          hero: { ...DEFAULT_CMS_CONTENT.hero, ...(remoteData.hero || {}) },
-          announcementBanner: {
-            ...DEFAULT_CMS_CONTENT.announcementBanner,
-            ...(remoteData.announcementBanner || {})
-          },
-          visibility: {
-            ...DEFAULT_CMS_CONTENT.visibility,
-            ...(remoteData.visibility || {})
-          },
-          about: { ...DEFAULT_CMS_CONTENT.about, ...(remoteData.about || {}) },
-          contact: { ...DEFAULT_CMS_CONTENT.contact, ...(remoteData.contact || {}) },
-          faqList: remoteData.faqList || DEFAULT_CMS_CONTENT.faqList,
-          curriculaList: remoteData.curriculaList || DEFAULT_CMS_CONTENT.curriculaList
-        };
+        if (snap.exists()) {
+          const remoteData = snap.data() as SiteContentSettings;
+          const merged: SiteContentSettings = {
+            ...DEFAULT_CMS_CONTENT,
+            ...remoteData,
+            hero: { ...DEFAULT_CMS_CONTENT.hero, ...(remoteData.hero || {}) },
+            announcementBanner: {
+              ...DEFAULT_CMS_CONTENT.announcementBanner,
+              ...(remoteData.announcementBanner || {})
+            },
+            visibility: {
+              ...DEFAULT_CMS_CONTENT.visibility,
+              ...(remoteData.visibility || {})
+            },
+            about: { ...DEFAULT_CMS_CONTENT.about, ...(remoteData.about || {}) },
+            contact: { ...DEFAULT_CMS_CONTENT.contact, ...(remoteData.contact || {}) },
+            faqList: remoteData.faqList || DEFAULT_CMS_CONTENT.faqList,
+            curriculaList: remoteData.curriculaList || DEFAULT_CMS_CONTENT.curriculaList
+          };
 
-        this.cachedData = merged;
-        localStorage.setItem(CMS_STORAGE_KEY, JSON.stringify(merged));
-        return merged;
-      } else {
-        // Seed default content to Firestore
-        await setDoc(docRef, cleanPayloadForFirestore(DEFAULT_CMS_CONTENT));
-        this.cachedData = DEFAULT_CMS_CONTENT;
-        localStorage.setItem(CMS_STORAGE_KEY, JSON.stringify(DEFAULT_CMS_CONTENT));
-        return DEFAULT_CMS_CONTENT;
+          this.cachedData = merged;
+          localStorage.setItem(CMS_STORAGE_KEY, JSON.stringify(merged));
+        } else {
+          await setDoc(docRef, cleanPayloadForFirestore(DEFAULT_CMS_CONTENT));
+          localStorage.setItem(CMS_STORAGE_KEY, JSON.stringify(DEFAULT_CMS_CONTENT));
+        }
+      } catch (err) {
+        console.warn("Notice: Non-blocking Firestore CMS fetch notice:", err);
       }
-    } catch (err) {
-      console.warn("Notice: Firestore CMS fetch fallback to default/cached:", err);
-      return this.cachedData || DEFAULT_CMS_CONTENT;
-    }
+    })();
+
+    return DEFAULT_CMS_CONTENT;
   }
 
   /**

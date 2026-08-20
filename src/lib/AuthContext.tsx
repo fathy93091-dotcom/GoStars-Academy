@@ -35,37 +35,56 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   useEffect(() => {
     let unsubscribeProfile: (() => void) | null = null;
+    let isMounted = true;
+
+    // Safety timeout: Never keep the app locked on "verifying" for more than 1.5 seconds
+    const safetyTimer = setTimeout(() => {
+      if (isMounted) {
+        setIsLoading(false);
+      }
+    }, 1500);
 
     const unsubscribeAuth = onAuthStateChanged(auth, async currentUser => {
+      clearTimeout(safetyTimer);
+      if (!isMounted) return;
+      
       setUser(currentUser);
       setError(null);
 
       if (currentUser) {
         try {
-          // Initialize or fetch user profile from Firestore
+          // Initialize or fetch user profile (with non-blocking 0ms cache)
           const synced = await syncUserProfile(currentUser);
-          setProfile(synced);
+          if (isMounted) {
+            setProfile(synced);
+          }
 
           // Real-time listener for profile/role updates
           if (unsubscribeProfile) unsubscribeProfile();
           unsubscribeProfile = subscribeToUserProfile(currentUser.uid, updated => {
-            if (updated) {
+            if (updated && isMounted) {
               setProfile(updated);
             }
           });
         } catch (err: any) {
-          console.warn("Auth initialization warning:", err?.message || err);
+          console.warn("Auth initialization notice:", err?.message || err);
         } finally {
-          setIsLoading(false);
+          if (isMounted) {
+            setIsLoading(false);
+          }
         }
       } else {
         if (unsubscribeProfile) unsubscribeProfile();
-        setProfile(null);
-        setIsLoading(false);
+        if (isMounted) {
+          setProfile(null);
+          setIsLoading(false);
+        }
       }
     });
 
     return () => {
+      isMounted = false;
+      clearTimeout(safetyTimer);
       unsubscribeAuth();
       if (unsubscribeProfile) unsubscribeProfile();
     };
@@ -112,11 +131,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const role = profile?.role || null;
-  const isAdmin = role === "admin";
+  const isMasterAdminEmail = Boolean(
+    user?.email && user.email.toLowerCase() === "fathy93091@gmail.com"
+  );
+  const role = isMasterAdminEmail ? "admin" : (profile?.role || null);
+  const isAdmin = role === "admin" || isMasterAdminEmail;
   const isSupervisor = role === "supervisor" || isAdmin;
   const isTeacher = role === "teacher" || isSupervisor;
-  const isParent = role === "parent";
+  const isParent = role === "parent" && !isAdmin && !isSupervisor && !isTeacher;
 
   return (
     <AuthContext.Provider

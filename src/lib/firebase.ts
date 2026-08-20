@@ -1,4 +1,5 @@
 import { initializeApp, getApps } from "firebase/app";
+import { getAnalytics, isSupported } from "firebase/analytics";
 import {
   getAuth,
   GoogleAuthProvider,
@@ -22,7 +23,17 @@ import { GoStarsBackupData, UserProfile, UserRole } from "../types";
 export const MASTER_ADMIN_EMAIL = "fathy93091@gmail.com";
 
 // Initialize Firebase App
-const app = !getApps().length ? initializeApp(firebaseConfig) : getApps()[0];
+export const app = !getApps().length ? initializeApp(firebaseConfig) : getApps()[0];
+
+// Initialize Analytics conditionally (safely in browser environments)
+export let analytics: any = null;
+if (typeof window !== "undefined") {
+  isSupported().then((supported) => {
+    if (supported) {
+      analytics = getAnalytics(app);
+    }
+  }).catch(() => {});
+}
 
 export const auth = getAuth(app);
 export const googleProvider = new GoogleAuthProvider();
@@ -31,15 +42,30 @@ googleProvider.setCustomParameters({ prompt: "select_account" });
 // Initialize Firestore Database (default instance)
 export const db = getFirestore(app);
 
-// Get User Profile from Firestore
+// Get User Profile from Firestore or cache
 export async function getUserProfile(uid: string): Promise<UserProfile | null> {
   if (!uid) return null;
+  
+  // Try local cache first for instant resolution
+  const cacheKey = `gostars_profile_${uid}`;
+  try {
+    const cached = localStorage.getItem(cacheKey);
+    if (cached) {
+      return JSON.parse(cached);
+    }
+  } catch {}
+
   try {
     const userDocRef = doc(db, "users", uid);
-    const snap = await getDoc(userDocRef);
-    if (snap.exists()) {
+    // 2-second timeout to prevent any UI freezing on slow networks
+    const snapPromise = getDoc(userDocRef);
+    const timeoutPromise = new Promise<null>((resolve) => setTimeout(() => resolve(null), 1800));
+    
+    const snap: any = await Promise.race([snapPromise, timeoutPromise]);
+    
+    if (snap && snap.exists && snap.exists()) {
       const data = snap.data();
-      return {
+      const profile: UserProfile = {
         uid: data.uid || uid,
         role: (data.role as UserRole) || (data.email === MASTER_ADMIN_EMAIL ? "admin" : "parent"),
         name: data.name || data.displayName || "مستخدم الأكاديمية",
@@ -52,6 +78,10 @@ export async function getUserProfile(uid: string): Promise<UserProfile | null> {
         createdAt: data.createdAt || new Date().toISOString(),
         updatedAt: data.updatedAt || new Date().toISOString()
       };
+      try {
+        localStorage.setItem(cacheKey, JSON.stringify(profile));
+      } catch {}
+      return profile;
     }
     return null;
   } catch (error: any) {
@@ -65,18 +95,16 @@ export async function syncUserProfile(
   user: User,
   preferredRole?: UserRole
 ): Promise<UserProfile> {
+  const isMaster = user.email && user.email.toLowerCase() === MASTER_ADMIN_EMAIL.toLowerCase();
   const existing = await getUserProfile(user.uid);
   const now = new Date().toISOString();
 
-  // Determine role: Master admin email always gets admin role
-  let assignedRole: UserRole = "parent";
-  if (user.email && user.email.toLowerCase() === MASTER_ADMIN_EMAIL.toLowerCase()) {
-    assignedRole = "admin";
-  } else if (existing?.role) {
-    assignedRole = existing.role;
+  // Determine role: Master admin email always gets admin role immediately
+  let assignedRole: UserRole = isMaster ? "admin" : "parent";
+  if (existing?.role) {
+    assignedRole = isMaster ? "admin" : existing.role;
   } else if (preferredRole) {
-    // Only allow teacher or parent on self-registration
-    assignedRole = preferredRole === "teacher" ? "teacher" : "parent";
+    assignedRole = isMaster ? "admin" : (preferredRole === "teacher" ? "teacher" : "parent");
   }
 
   const profile: UserProfile = {
@@ -93,19 +121,27 @@ export async function syncUserProfile(
     updatedAt: now
   };
 
+  // Cache locally immediately for 0ms access
   try {
-    const userDocRef = doc(db, "users", user.uid);
-    await setDoc(
-      userDocRef,
-      cleanPayloadForFirestore({
-        ...profile,
-        updatedAt: now
-      }),
-      { merge: true }
-    );
-  } catch (err: any) {
-    console.warn("Firestore syncUserProfile notice:", err?.message || err);
-  }
+    localStorage.setItem(`gostars_profile_${user.uid}`, JSON.stringify(profile));
+  } catch {}
+
+  // Sync to Firestore in background without blocking
+  (async () => {
+    try {
+      const userDocRef = doc(db, "users", user.uid);
+      await setDoc(
+        userDocRef,
+        cleanPayloadForFirestore({
+          ...profile,
+          updatedAt: now
+        }),
+        { merge: true }
+      );
+    } catch (err: any) {
+      console.warn("Firestore syncUserProfile background notice:", err?.message || err);
+    }
+  })();
 
   return profile;
 }

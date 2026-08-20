@@ -9,6 +9,7 @@ import { AppRoute } from '../../navigation/routes';
 import {
   GraduationCap,
   BookOpen,
+  ShieldCheck,
   ArrowRight,
   ArrowLeft,
   Lock,
@@ -25,13 +26,23 @@ interface LoginPortalStubProps {
 
 export function LoginPortalStub({ onNavigate }: LoginPortalStubProps) {
   const { t, isRTL } = useLanguage();
-  const { user, profile, role, isLoading, error, loginWithGoogle, logout } = useAuth();
+  const { user, profile, role, isAdmin, isSupervisor, isLoading, error, loginWithGoogle, logout } = useAuth();
   const ArrowIcon = isRTL ? ArrowLeft : ArrowRight;
   const [selectedRole, setSelectedRole] = useState<'student' | 'teacher'>('student');
 
   const handleGoogleLogin = async () => {
     const targetRole = selectedRole === 'teacher' ? 'teacher' : 'parent';
-    await loginWithGoogle(targetRole);
+
+    const loggedUser = await loginWithGoogle(targetRole);
+    if (loggedUser) {
+      if (loggedUser.role === 'admin' || loggedUser.email?.toLowerCase() === 'fathy93091@gmail.com') {
+        onNavigate('admin');
+      } else if (loggedUser.role === 'teacher' || targetRole === 'teacher') {
+        onNavigate('teacher-platform');
+      } else {
+        onNavigate('portal');
+      }
+    }
   };
 
   return (
@@ -87,7 +98,7 @@ export function LoginPortalStub({ onNavigate }: LoginPortalStubProps) {
                       {profile?.name || user.displayName || "مستخدم مسجل"}
                     </h3>
                     <span className="px-2 py-0.5 rounded-full bg-blue-100 text-blue-800 font-semibold text-[10px] uppercase">
-                      {role || "parent"}
+                      {isAdmin ? "admin" : (role || "parent")}
                     </span>
                   </div>
                   <p className="text-xs text-slate-500 truncate mt-0.5">{user.email}</p>
@@ -103,7 +114,7 @@ export function LoginPortalStub({ onNavigate }: LoginPortalStubProps) {
               </div>
 
               <div className="flex flex-col sm:flex-row items-center gap-3 w-full">
-                {role === 'admin' ? (
+                {(isAdmin || isSupervisor) ? (
                   <Button
                     variant="primary"
                     size="md"
@@ -112,9 +123,9 @@ export function LoginPortalStub({ onNavigate }: LoginPortalStubProps) {
                     icon={<ArrowIcon className="w-4 h-4" />}
                     iconPosition="end"
                   >
-                    {isRTL ? 'لوحة الإدارة المركزية' : 'Admin Hub'}
+                    {isRTL ? 'الدخول للوحة الإدارة المركزية' : 'Enter Admin Hub'}
                   </Button>
-                ) : (role === 'teacher' || role === 'supervisor') ? (
+                ) : (role === 'teacher') ? (
                   <Button
                     variant="primary"
                     size="md"

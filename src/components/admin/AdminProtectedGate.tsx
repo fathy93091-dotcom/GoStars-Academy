@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { useAuth } from "../../lib/AuthContext";
 import { useLanguage } from "../../i18n/LanguageContext";
 import { AppRoute } from "../../navigation/routes";
@@ -28,21 +28,38 @@ export const AdminProtectedGate: React.FC<AdminProtectedGateProps> = ({ onNaviga
   const { user, profile, role, isAdmin, isSupervisor, isLoading, loginWithGoogle, logout } = useAuth();
   const { isRTL } = useLanguage();
   const ArrowIcon = isRTL ? ArrowLeft : ArrowRight;
+  const [forceShowGate, setForceShowGate] = useState(false);
 
-  if (isLoading) {
+  // Failsafe: Never stay on spinner for more than 1 second
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setForceShowGate(true);
+    }, 1000);
+    return () => clearTimeout(timer);
+  }, []);
+
+  const isMaster = Boolean(user?.email && user.email.toLowerCase() === "fathy93091@gmail.com");
+
+  // 1. Authorized State (Admin, Supervisor, or Master Admin Email)
+  if (user && (isAdmin || isSupervisor || isMaster)) {
+    return <AdminPlatformView onNavigate={onNavigate} />;
+  }
+
+  // 2. Loading State (Only if not force-shown)
+  if (isLoading && !forceShowGate && !user) {
     return (
       <div className="min-h-[70vh] flex flex-col items-center justify-center p-4">
         <div className="w-12 h-12 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center animate-pulse mb-3">
           <Lock className="w-6 h-6" />
         </div>
         <p className="text-sm font-bold text-slate-600">
-          {isRTL ? "جارٍ التحقق من الصلاحيات الأمنية..." : "Verifying administrative authorization..."}
+          {isRTL ? "جارٍ التحقق من الصلاحيات..." : "Verifying authorization..."}
         </p>
       </div>
     );
   }
 
-  // 1. Not Authenticated State
+  // 3. Not Authenticated State
   if (!user) {
     return (
       <div className="py-12 sm:py-20 flex flex-col items-center justify-center min-h-[75vh]">

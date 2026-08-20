@@ -1,20 +1,34 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, lazy, Suspense } from 'react';
 import { LanguageProvider } from './i18n/LanguageContext';
 import { AuthProvider } from './lib/AuthContext';
 import { SiteContentProvider } from './lib/SiteContentContext';
 import { Layout } from './components/layout/Layout';
 import { AppRoute } from './navigation/routes';
 import { HomePage } from './components/pages/HomePage';
-import { AboutPage } from './components/pages/AboutPage';
-import { CurriculaPage } from './components/pages/CurriculaPage';
-import { PricingPage } from './components/pages/PricingPage';
-import { TeachersPage } from './components/pages/TeachersPage';
-import { HonorRollPage } from './components/pages/HonorRollPage';
-import { ContactPage } from './components/pages/ContactPage';
-import { LoginPortalStub } from './components/portals/LoginPortalStub';
-import { TeacherPlatformView } from './components/TeacherPlatformView';
-import { AdminProtectedGate } from './components/admin/AdminProtectedGate';
-import { ParentPortalView } from './components/portal/ParentPortalView';
+
+// Lazy load secondary pages and platforms for ultra-fast initial bundle and instantaneous page load
+const AboutPage = lazy(() => import('./components/pages/AboutPage').then(m => ({ default: m.AboutPage })));
+const CurriculaPage = lazy(() => import('./components/pages/CurriculaPage').then(m => ({ default: m.CurriculaPage })));
+const PricingPage = lazy(() => import('./components/pages/PricingPage').then(m => ({ default: m.PricingPage })));
+const TeachersPage = lazy(() => import('./components/pages/TeachersPage').then(m => ({ default: m.TeachersPage })));
+const HonorRollPage = lazy(() => import('./components/pages/HonorRollPage').then(m => ({ default: m.HonorRollPage })));
+const ContactPage = lazy(() => import('./components/pages/ContactPage').then(m => ({ default: m.ContactPage })));
+const LoginPortalStub = lazy(() => import('./components/portals/LoginPortalStub').then(m => ({ default: m.LoginPortalStub })));
+const TeacherPlatformView = lazy(() => import('./components/TeacherPlatformView').then(m => ({ default: m.TeacherPlatformView })));
+const AdminProtectedGate = lazy(() => import('./components/admin/AdminProtectedGate').then(m => ({ default: m.AdminProtectedGate })));
+const ParentPortalView = lazy(() => import('./components/portal/ParentPortalView').then(m => ({ default: m.ParentPortalView })));
+
+// Ultra lightweight page loader
+function PageLoader() {
+  return (
+    <div className="min-h-[50vh] flex flex-col items-center justify-center p-8">
+      <div className="w-10 h-10 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center animate-pulse mb-3">
+        <span className="text-xl">✨</span>
+      </div>
+      <p className="text-xs font-bold text-slate-500 animate-pulse">جارٍ التحميل السريع...</p>
+    </div>
+  );
+}
 
 function AppContent() {
   const [currentRoute, setCurrentRoute] = useState<AppRoute>(() => {
@@ -76,17 +90,29 @@ function AppContent() {
 
   // If on Teacher Platform, render the complete Teacher Platform with its own dedicated layout
   if (currentRoute === 'teacher-platform') {
-    return <TeacherPlatformView onBackToPublicSite={() => handleNavigate('home')} />;
+    return (
+      <Suspense fallback={<PageLoader />}>
+        <TeacherPlatformView onBackToPublicSite={() => handleNavigate('home')} />
+      </Suspense>
+    );
   }
 
   // If on /admin, render the protected Admin Gate verifying RBAC permissions
   if (currentRoute === 'admin') {
-    return <AdminProtectedGate onNavigate={handleNavigate} />;
+    return (
+      <Suspense fallback={<PageLoader />}>
+        <AdminProtectedGate onNavigate={handleNavigate} />
+      </Suspense>
+    );
   }
 
   // If on /portal, render the Student & Parent Portal
   if (currentRoute === 'portal') {
-    return <ParentPortalView onNavigate={handleNavigate} />;
+    return (
+      <Suspense fallback={<PageLoader />}>
+        <ParentPortalView onNavigate={handleNavigate} />
+      </Suspense>
+    );
   }
 
   const renderCurrentPage = () => {
@@ -94,19 +120,47 @@ function AppContent() {
       case 'home':
         return <HomePage onNavigate={handleNavigate} />;
       case 'about':
-        return <AboutPage onNavigate={handleNavigate} />;
+        return (
+          <Suspense fallback={<PageLoader />}>
+            <AboutPage onNavigate={handleNavigate} />
+          </Suspense>
+        );
       case 'curricula':
-        return <CurriculaPage onNavigate={handleNavigate} />;
+        return (
+          <Suspense fallback={<PageLoader />}>
+            <CurriculaPage onNavigate={handleNavigate} />
+          </Suspense>
+        );
       case 'pricing':
-        return <PricingPage onNavigate={handleNavigate} />;
+        return (
+          <Suspense fallback={<PageLoader />}>
+            <PricingPage onNavigate={handleNavigate} />
+          </Suspense>
+        );
       case 'teachers':
-        return <TeachersPage onNavigate={handleNavigate} />;
+        return (
+          <Suspense fallback={<PageLoader />}>
+            <TeachersPage onNavigate={handleNavigate} />
+          </Suspense>
+        );
       case 'honor-roll':
-        return <HonorRollPage onNavigate={handleNavigate} />;
+        return (
+          <Suspense fallback={<PageLoader />}>
+            <HonorRollPage onNavigate={handleNavigate} />
+          </Suspense>
+        );
       case 'contact':
-        return <ContactPage onNavigate={handleNavigate} />;
+        return (
+          <Suspense fallback={<PageLoader />}>
+            <ContactPage onNavigate={handleNavigate} />
+          </Suspense>
+        );
       case 'login':
-        return <LoginPortalStub onNavigate={handleNavigate} />;
+        return (
+          <Suspense fallback={<PageLoader />}>
+            <LoginPortalStub onNavigate={handleNavigate} />
+          </Suspense>
+        );
       default:
         return <HomePage onNavigate={handleNavigate} />;
     }
