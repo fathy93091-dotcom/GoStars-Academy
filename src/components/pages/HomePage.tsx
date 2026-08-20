@@ -60,6 +60,18 @@ export function HomePage({ onNavigate }: HomePageProps) {
       {/* 1. HERO SECTION */}
       {visibility.showHero && (
         <section className="relative overflow-hidden bg-gradient-to-b from-[#0B192C] via-[#0E243D] to-[#0B192C] text-white pt-16 pb-20 sm:pt-24 sm:pb-28 border-b border-[#1E3A5F]/60">
+          {content.images?.heroBannerImage && (
+            <div className="absolute inset-0 pointer-events-none opacity-20 mix-blend-luminosity">
+              <img
+                src={content.images.heroBannerImage}
+                alt="Academy Background"
+                className="w-full h-full object-cover"
+                referrerPolicy="no-referrer"
+              />
+              <div className="absolute inset-0 bg-gradient-to-b from-[#0B192C] via-[#0B192C]/80 to-[#0B192C]" />
+            </div>
+          )}
+
           <div className="absolute inset-0 opacity-10 pointer-events-none">
             <div className="absolute top-0 right-0 w-96 h-96 rounded-full bg-[#C59B27] blur-3xl" />
             <div className="absolute bottom-0 left-0 w-96 h-96 rounded-full bg-[#0F4C81] blur-3xl" />
@@ -73,7 +85,7 @@ export function HomePage({ onNavigate }: HomePageProps) {
               </Badge>
 
               <span className="text-amber-400/90 font-bold text-sm tracking-widest uppercase mb-3">
-                GoStars Academy
+                {lang === 'ar' ? (content.branding?.academyNameAr || 'GoStars Academy') : (content.branding?.academyNameEn || 'GoStars Academy')}
               </span>
 
               <h1 className="text-3xl sm:text-5xl lg:text-6xl font-black tracking-tight text-white leading-tight sm:leading-tight mb-6">

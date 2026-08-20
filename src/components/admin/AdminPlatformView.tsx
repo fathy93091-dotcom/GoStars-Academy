@@ -312,10 +312,20 @@ export const AdminPlatformView: React.FC<AdminPlatformViewProps> = ({ onNavigate
               {/* Workspace Switcher */}
               <button
                 onClick={() => onNavigate("teacher-platform")}
-                className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-bold transition border border-indigo-200"
+                className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-bold transition border border-indigo-200 cursor-pointer"
               >
                 <Building2 className="w-3.5 h-3.5" />
                 <span>{isRTL ? "منصة المعلم" : "Teacher Workspace"}</span>
+              </button>
+
+              {/* Live Visual Site Editor Button */}
+              <button
+                onClick={() => onNavigate("site-editor")}
+                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-slate-950 text-xs font-black transition shadow-sm cursor-pointer active:scale-95"
+                title={isRTL ? "فتح محرر وتصميم صفحات الموقع المباشر" : "Launch Live Visual Editor"}
+              >
+                <Sparkles className="w-3.5 h-3.5" />
+                <span>{isRTL ? "المحرر البصري للموقع" : "Live Visual Editor"}</span>
               </button>
 
               {/* Sign Out / Exit */}

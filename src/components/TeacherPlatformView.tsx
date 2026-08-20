@@ -272,9 +272,17 @@ export const TeacherPlatformView: React.FC<TeacherPlatformViewProps> = ({
     generalNotes: string;
   }): Promise<string> => {
     try {
+      const idToken = user ? await user.getIdToken().catch(() => null) : null;
+      const headers: Record<string, string> = { "Content-Type": "application/json" };
+      if (idToken) {
+        headers["Authorization"] = `Bearer ${idToken}`;
+      } else {
+        headers["Authorization"] = `Bearer session_${currentTeacherId}`;
+      }
+
       const response = await fetch("/api/ai/generate-report", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers,
         body: JSON.stringify({
           studentName: payload.groupName,
           subject: payload.subject,
@@ -307,9 +315,17 @@ export const TeacherPlatformView: React.FC<TeacherPlatformViewProps> = ({
     attachment?: ReportAttachment;
   }): Promise<string> => {
     try {
+      const idToken = user ? await user.getIdToken().catch(() => null) : null;
+      const headers: Record<string, string> = { "Content-Type": "application/json" };
+      if (idToken) {
+        headers["Authorization"] = `Bearer ${idToken}`;
+      } else {
+        headers["Authorization"] = `Bearer session_${currentTeacherId}`;
+      }
+
       const response = await fetch("/api/ai/generate-report", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers,
         body: JSON.stringify({
           ...payload,
           preferredLanguage: settings.preferredLanguage

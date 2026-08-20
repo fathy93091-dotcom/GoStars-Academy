@@ -15,6 +15,44 @@ const CMS_STORAGE_KEY = "gostars_site_content_v1";
 
 export const DEFAULT_CMS_CONTENT: SiteContentSettings = {
   id: "main_config",
+  branding: {
+    academyNameAr: "أكاديمية GoStars",
+    academyNameEn: "GoStars Academy",
+    academySloganAr: "تعليم متميز ومبسط.. وتفوق مستمر لأبنائكم",
+    academySloganEn: "Excellence in Quranic & Academic Education with Heritage and Innovation",
+    logoStyle: "default_crest"
+  },
+  images: {
+    heroBannerImage: "",
+    aboutStoryImage: "https://images.unsplash.com/photo-1577896851231-70ef18881754?auto=format&fit=crop&w=1000&q=80",
+    aboutMissionImage: "https://images.unsplash.com/photo-1509062522246-3755977927d7?auto=format&fit=crop&w=1000&q=80",
+    curriculaHeaderImage: "https://images.unsplash.com/photo-1497633762265-9d179a990aa6?auto=format&fit=crop&w=1000&q=80",
+    honorRollHeroImage: "https://images.unsplash.com/photo-1523240795612-9a054b0db644?auto=format&fit=crop&w=1000&q=80",
+    contactHeaderImage: "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=1000&q=80",
+    gallery: [
+      {
+        id: "gal_1",
+        url: "https://images.unsplash.com/photo-1609599006353-e629aaabfeae?auto=format&fit=crop&w=800&q=80",
+        titleAr: "حلقات القرآن الكريم وتجويده",
+        titleEn: "Holy Quran Recitation Classes",
+        category: "quran"
+      },
+      {
+        id: "gal_2",
+        url: "https://images.unsplash.com/photo-1503676260728-1c00da094a0b?auto=format&fit=crop&w=800&q=80",
+        titleAr: "تأسيس اللغة العربية والنورانية",
+        titleEn: "Arabic & Nooraniyah Foundations",
+        category: "arabic"
+      },
+      {
+        id: "gal_3",
+        url: "https://images.unsplash.com/photo-1580582932707-520aed937b7b?auto=format&fit=crop&w=800&q=80",
+        titleAr: "شرح المناهج الدراسية والتفوق",
+        titleEn: "Academic Curricula & Excellence",
+        category: "school"
+      }
+    ]
+  },
   hero: {
     badgeAr: "أكاديمية تعليمية متخصصة للقرآن واللغة العربية والمناهج",
     badgeEn: "Premier Educational Academy for Quran & Arabic",
@@ -258,6 +296,8 @@ export class CmsDataEngine {
           const merged: SiteContentSettings = {
             ...DEFAULT_CMS_CONTENT,
             ...remoteData,
+            branding: { ...DEFAULT_CMS_CONTENT.branding, ...(remoteData.branding || {}) },
+            images: { ...DEFAULT_CMS_CONTENT.images, ...(remoteData.images || {}) },
             hero: { ...DEFAULT_CMS_CONTENT.hero, ...(remoteData.hero || {}) },
             announcementBanner: {
               ...DEFAULT_CMS_CONTENT.announcementBanner,
@@ -329,6 +369,8 @@ export class CmsDataEngine {
           const merged: SiteContentSettings = {
             ...DEFAULT_CMS_CONTENT,
             ...remoteData,
+            branding: { ...DEFAULT_CMS_CONTENT.branding, ...(remoteData.branding || {}) },
+            images: { ...DEFAULT_CMS_CONTENT.images, ...(remoteData.images || {}) },
             hero: { ...DEFAULT_CMS_CONTENT.hero, ...(remoteData.hero || {}) },
             announcementBanner: {
               ...DEFAULT_CMS_CONTENT.announcementBanner,

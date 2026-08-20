@@ -1,7 +1,7 @@
 import React, { useState, useEffect, lazy, Suspense } from 'react';
 import { LanguageProvider } from './i18n/LanguageContext';
 import { AuthProvider } from './lib/AuthContext';
-import { SiteContentProvider } from './lib/SiteContentContext';
+import { SiteContentProvider, useSiteContent } from './lib/SiteContentContext';
 import { Layout } from './components/layout/Layout';
 import { AppRoute } from './navigation/routes';
 import { HomePage } from './components/pages/HomePage';
@@ -17,6 +17,7 @@ const LoginPortalStub = lazy(() => import('./components/portals/LoginPortalStub'
 const TeacherPlatformView = lazy(() => import('./components/TeacherPlatformView').then(m => ({ default: m.TeacherPlatformView })));
 const AdminProtectedGate = lazy(() => import('./components/admin/AdminProtectedGate').then(m => ({ default: m.AdminProtectedGate })));
 const ParentPortalView = lazy(() => import('./components/portal/ParentPortalView').then(m => ({ default: m.ParentPortalView })));
+const AdminLiveVisualEditor = lazy(() => import('./components/admin/cms/AdminLiveVisualEditor').then(m => ({ default: m.AdminLiveVisualEditor })));
 
 // Ultra lightweight page loader
 function PageLoader() {
@@ -31,6 +32,7 @@ function PageLoader() {
 }
 
 function AppContent() {
+  const { content, updateContent, resetContent } = useSiteContent();
   const [currentRoute, setCurrentRoute] = useState<AppRoute>(() => {
     try {
       const hash = window.location.hash.replace('#', '').toLowerCase();
@@ -45,7 +47,8 @@ function AppContent() {
         'login',
         'portal',
         'admin',
-        'teacher-platform'
+        'teacher-platform',
+        'site-editor'
       ];
       if (validRoutes.includes(hash as AppRoute)) {
         return hash as AppRoute;
@@ -69,7 +72,8 @@ function AppContent() {
         'login',
         'portal',
         'admin',
-        'teacher-platform'
+        'teacher-platform',
+        'site-editor'
       ];
       if (validRoutes.includes(hash as AppRoute)) {
         setCurrentRoute(hash as AppRoute);
@@ -102,6 +106,20 @@ function AppContent() {
     return (
       <Suspense fallback={<PageLoader />}>
         <AdminProtectedGate onNavigate={handleNavigate} />
+      </Suspense>
+    );
+  }
+
+  // If on /site-editor, render the Live Visual Site Editor
+  if (currentRoute === 'site-editor') {
+    return (
+      <Suspense fallback={<PageLoader />}>
+        <AdminLiveVisualEditor
+          content={content}
+          onSaveContent={updateContent}
+          onResetContent={resetContent}
+          onExit={() => handleNavigate('admin')}
+        />
       </Suspense>
     );
   }

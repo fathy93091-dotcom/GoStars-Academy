@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import {
   SiteContentSettings,
   CmsCurriculumItem,
@@ -7,10 +7,15 @@ import {
   CmsAnnouncementBanner,
   CmsSectionVisibility,
   CmsAboutSettings,
-  CmsContactSettings
+  CmsContactSettings,
+  CmsBrandingSettings,
+  CmsPageImages,
+  CmsGalleryItem
 } from "../../../types";
 import { useLanguage } from "../../../i18n/LanguageContext";
 import { useAuth } from "../../../lib/AuthContext";
+import { AdminLiveVisualEditor } from "./AdminLiveVisualEditor";
+import { Logo } from "../../shared/Logo";
 import {
   Sparkles,
   Layout,
@@ -32,7 +37,12 @@ import {
   ExternalLink,
   ChevronDown,
   Layers,
-  AlertCircle
+  AlertCircle,
+  Image as ImageIcon,
+  Monitor,
+  Upload,
+  Palette,
+  EyeOff
 } from "lucide-react";
 
 interface AdminCmsManagerProps {
@@ -41,7 +51,7 @@ interface AdminCmsManagerProps {
   onResetContent: () => Promise<void>;
 }
 
-type CmsSubTab = "hero" | "banner" | "curricula" | "faq" | "visibility" | "about_contact";
+type CmsSubTab = "branding" | "images" | "hero" | "banner" | "curricula" | "faq" | "visibility" | "about_contact";
 
 export const AdminCmsManager: React.FC<AdminCmsManagerProps> = ({
   content,
@@ -51,11 +61,31 @@ export const AdminCmsManager: React.FC<AdminCmsManagerProps> = ({
   const { isRTL } = useLanguage();
   const { profile, user } = useAuth();
 
-  const [activeTab, setActiveTab] = useState<CmsSubTab>("hero");
+  const [isVisualEditorOpen, setIsVisualEditorOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState<CmsSubTab>("branding");
   const [isSaving, setIsSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
 
   // Local Editable Form States
+  const [brandingForm, setBrandingForm] = useState<CmsBrandingSettings>({
+    academyNameAr: content.branding?.academyNameAr || "أكاديمية GoStars",
+    academyNameEn: content.branding?.academyNameEn || "GoStars Academy",
+    academySloganAr: content.branding?.academySloganAr || "تعليم متميز ومبسط.. وتفوق مستمر لأبنائكم",
+    academySloganEn: content.branding?.academySloganEn || "Excellence in Quranic & Academic Education",
+    logoUrl: content.branding?.logoUrl || "",
+    logoStyle: content.branding?.logoStyle || "default_crest"
+  });
+
+  const [imagesForm, setImagesForm] = useState<CmsPageImages>({
+    heroBannerImage: content.images?.heroBannerImage || "",
+    aboutStoryImage: content.images?.aboutStoryImage || "https://images.unsplash.com/photo-1577896851231-70ef18881754?auto=format&fit=crop&w=1000&q=80",
+    aboutMissionImage: content.images?.aboutMissionImage || "https://images.unsplash.com/photo-1509062522246-3755977927d7?auto=format&fit=crop&w=1000&q=80",
+    curriculaHeaderImage: content.images?.curriculaHeaderImage || "https://images.unsplash.com/photo-1497633762265-9d179a990aa6?auto=format&fit=crop&w=1000&q=80",
+    honorRollHeroImage: content.images?.honorRollHeroImage || "https://images.unsplash.com/photo-1523240795612-9a054b0db644?auto=format&fit=crop&w=1000&q=80",
+    contactHeaderImage: content.images?.contactHeaderImage || "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=1000&q=80",
+    gallery: content.images?.gallery || []
+  });
+
   const [heroForm, setHeroForm] = useState<CmsHeroSettings>({ ...content.hero });
   const [bannerForm, setBannerForm] = useState<CmsAnnouncementBanner>({ ...content.announcementBanner });
   const [visibilityForm, setVisibilityForm] = useState<CmsSectionVisibility>({ ...content.visibility });
@@ -71,12 +101,51 @@ export const AdminCmsManager: React.FC<AdminCmsManagerProps> = ({
   const [editingFaq, setEditingFaq] = useState<CmsFaqItem | null>(null);
   const [isFaqModalOpen, setIsFaqModalOpen] = useState(false);
 
+  const logoUploadRef = useRef<HTMLInputElement>(null);
+  const heroImageRef = useRef<HTMLInputElement>(null);
+  const aboutImageRef = useRef<HTMLInputElement>(null);
+  const galleryImageRef = useRef<HTMLInputElement>(null);
+
+  // File Upload Helper
+  const handleFileUpload = (
+    e: React.ChangeEvent<HTMLInputElement>,
+    onLoaded: (base64Url: string) => void
+  ) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 2.5 * 1024 * 1024) {
+      alert(isRTL ? "يرجى اختيار صورة بحجم أقل من 2.5 ميجابايت." : "Please select an image under 2.5MB.");
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (typeof reader.result === "string") {
+        onLoaded(reader.result);
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+
+  // If live visual editor is open, render full-screen Live Visual Editor
+  if (isVisualEditorOpen) {
+    return (
+      <AdminLiveVisualEditor
+        content={content}
+        onSaveContent={onSaveContent}
+        onResetContent={onResetContent}
+        onExit={() => setIsVisualEditorOpen(false)}
+      />
+    );
+  }
+
   // Trigger Save
   const handleSaveAll = async () => {
     setIsSaving(true);
     try {
       const updatedSettings: SiteContentSettings = {
         ...content,
+        branding: brandingForm,
+        images: imagesForm,
         hero: heroForm,
         announcementBanner: bannerForm,
         visibility: visibilityForm,
@@ -174,6 +243,38 @@ export const AdminCmsManager: React.FC<AdminCmsManagerProps> = ({
 
   return (
     <div className="space-y-6">
+      {/* Visual Live Editor Prompt Banner */}
+      <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-blue-950 rounded-3xl p-6 border border-indigo-900/60 shadow-lg text-white flex flex-col md:flex-row items-center justify-between gap-6">
+        <div className="flex items-start gap-4">
+          <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-amber-400 to-amber-200 text-slate-950 flex items-center justify-center shrink-0 shadow-md">
+            <Monitor className="w-7 h-7" />
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-amber-400 text-slate-950 uppercase">
+                {isRTL ? "ميزة جديدة وحصرية" : "NEW LIVE FEATURE"}
+              </span>
+              <h3 className="text-base font-black text-white">
+                {isRTL ? "المحرر البصري المباشر للموقع (Live Visual Site Builder)" : "Interactive Live Visual Site Editor"}
+              </h3>
+            </div>
+            <p className="text-xs text-slate-300 mt-1 max-w-xl leading-relaxed">
+              {isRTL
+                ? "عاين الموقع كاملاً بجميع صفحاته (الرئيسية، عن الأكاديمية، المناهج، الأسعار، المعلمين، لوحة الشرف، والتواصل) وعدّل النصوص، احذف أو أضف الصور، غيّر الشعار والاسلوجن لحظياً بضغطة واحدة!"
+                : "Browse all academy pages in full fidelity, edit text on the fly, upload/delete photos, change logos, and publish instantly!"}
+            </p>
+          </div>
+        </div>
+
+        <button
+          onClick={() => setIsVisualEditorOpen(true)}
+          className="w-full md:w-auto px-6 py-3 rounded-2xl bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-500 hover:to-amber-600 text-slate-950 font-black text-sm flex items-center justify-center gap-2.5 shadow-xl transition cursor-pointer shrink-0 active:scale-95"
+        >
+          <Sparkles className="w-4 h-4" />
+          <span>{isRTL ? "تشغيل المحرر البصري التفاعلي الآن" : "Launch Live Visual Editor"}</span>
+        </button>
+      </div>
+
       {/* Top Banner / Actions Bar */}
       <div className="bg-white rounded-3xl p-5 sm:p-6 border border-slate-200 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="flex items-start gap-3.5">
@@ -183,7 +284,7 @@ export const AdminCmsManager: React.FC<AdminCmsManagerProps> = ({
           <div>
             <div className="flex items-center gap-2">
               <h2 className="text-lg font-black text-slate-900">
-                {isRTL ? "نظام إدارة محتوى الموقع بدون كود (Site CMS)" : "No-Code Website Content CMS"}
+                {isRTL ? "لوحة إدارة محتوى الموقع (No-Code CMS)" : "Website Content Control Center"}
               </h2>
               <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-purple-100 text-purple-800 uppercase">
                 {isRTL ? "تحكم سحابي مباشر" : "Live Firestore CMS"}
@@ -191,8 +292,8 @@ export const AdminCmsManager: React.FC<AdminCmsManagerProps> = ({
             </div>
             <p className="text-xs text-slate-500 mt-1 max-w-2xl leading-relaxed">
               {isRTL
-                ? "تعديل وتخصيص نصوص الموقع العام، البنرات الترويجية، المناهج التعليمية، الأسئلة الشائعة، والتحكم في ظهور الأقسام بشكل فوري دون تعديل الكود."
-                : "Customize public website copy, hero slogans, promo banners, curricula, FAQ, and toggle section visibility in real-time."}
+                ? "تعديل الشعار، اسم الأكاديمية، الاسلوجن، الصور، البنرات الترويجية، المناهج التعليمية، والأسئلة الشائعة."
+                : "Customize academy branding, logo, slogan, images, hero copy, curricula, and FAQ in real-time."}
             </p>
           </div>
         </div>
@@ -205,7 +306,7 @@ export const AdminCmsManager: React.FC<AdminCmsManagerProps> = ({
                 onResetContent();
               }
             }}
-            className="px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold flex items-center gap-1.5 transition"
+            className="px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold flex items-center gap-1.5 transition cursor-pointer"
             title={isRTL ? "استعادة الافتراضيات" : "Reset Defaults"}
           >
             <RotateCcw className="w-3.5 h-3.5" />
@@ -215,7 +316,7 @@ export const AdminCmsManager: React.FC<AdminCmsManagerProps> = ({
           <button
             onClick={handleSaveAll}
             disabled={isSaving}
-            className={`px-5 py-2 rounded-xl text-xs font-black flex items-center gap-2 transition shadow-md ${
+            className={`px-5 py-2 rounded-xl text-xs font-black flex items-center gap-2 transition shadow-md cursor-pointer ${
               saveSuccess
                 ? "bg-emerald-600 text-white"
                 : "bg-slate-900 hover:bg-slate-800 text-white active:scale-95"
@@ -240,6 +341,8 @@ export const AdminCmsManager: React.FC<AdminCmsManagerProps> = ({
       <div className="bg-white rounded-2xl border border-slate-200 p-2 shadow-xs">
         <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar">
           {[
+            { id: "branding" as CmsSubTab, labelAr: "الشعار والهوية والاسم", labelEn: "Branding & Logo", icon: Sparkles },
+            { id: "images" as CmsSubTab, labelAr: "الصور والوسائط والمعرض", labelEn: "Images & Media", icon: ImageIcon },
             { id: "hero" as CmsSubTab, labelAr: "نصوص الواجهة الرئيسية", labelEn: "Hero & Copy", icon: Type },
             { id: "banner" as CmsSubTab, labelAr: "شريط الإعلانات والبنرات", labelEn: "Announcements", icon: Megaphone },
             { id: "curricula" as CmsSubTab, labelAr: "البرامج والمناهج التعليمية", labelEn: "Curricula Tracks", icon: BookOpen, count: curriculaList.length },
@@ -254,7 +357,7 @@ export const AdminCmsManager: React.FC<AdminCmsManagerProps> = ({
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition ${
+                className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition cursor-pointer ${
                   isActive
                     ? "bg-purple-600 text-white shadow-sm"
                     : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
@@ -276,6 +379,268 @@ export const AdminCmsManager: React.FC<AdminCmsManagerProps> = ({
           })}
         </div>
       </div>
+
+      {/* TAB 0: BRANDING & LOGO */}
+      {activeTab === "branding" && (
+        <div className="bg-white rounded-3xl border border-slate-200 p-6 sm:p-8 shadow-sm space-y-6">
+          <div className="border-b border-slate-100 pb-4 flex items-center justify-between">
+            <div>
+              <h3 className="text-base font-black text-slate-900">
+                {isRTL ? "استوديو الهوية والشعار والاسم (Academy Branding)" : "Academy Branding & Logo Studio"}
+              </h3>
+              <p className="text-xs text-slate-500 mt-0.5">
+                {isRTL ? "تغيير اسم الأكاديمية، الشعار الرسمي، والاسلوجن الترويجي في جميع صفحات الموقع." : "Customize academy title, slogan, and logo."}
+              </p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Arabic Academy Name */}
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-slate-700">
+                {isRTL ? "اسم الأكاديمية (بالعربية)" : "Academy Name (Arabic)"}
+              </label>
+              <input
+                type="text"
+                value={brandingForm.academyNameAr}
+                onChange={e => setBrandingForm(prev => ({ ...prev, academyNameAr: e.target.value }))}
+                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-xs text-slate-800 font-bold focus:bg-white focus:border-purple-500 transition"
+                placeholder="أكاديمية GoStars"
+              />
+            </div>
+
+            {/* English Academy Name */}
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-slate-700">
+                {isRTL ? "اسم الأكاديمية (بالإنجليزية)" : "Academy Name (English)"}
+              </label>
+              <input
+                type="text"
+                value={brandingForm.academyNameEn}
+                onChange={e => setBrandingForm(prev => ({ ...prev, academyNameEn: e.target.value }))}
+                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-xs text-slate-800 font-bold focus:bg-white focus:border-purple-500 transition"
+                placeholder="GoStars Academy"
+              />
+            </div>
+
+            {/* Arabic Slogan */}
+            <div className="space-y-1.5 md:col-span-2">
+              <label className="text-xs font-bold text-slate-700">
+                {isRTL ? "الشعار اللفظي / الاسلوجن (بالعربية)" : "Academy Slogan (Arabic)"}
+              </label>
+              <input
+                type="text"
+                value={brandingForm.academySloganAr}
+                onChange={e => setBrandingForm(prev => ({ ...prev, academySloganAr: e.target.value }))}
+                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-xs text-slate-800 font-semibold focus:bg-white focus:border-purple-500 transition"
+                placeholder="تعليم متميز ومبسط.. وتفوق مستمر لأبنائكم"
+              />
+            </div>
+
+            {/* English Slogan */}
+            <div className="space-y-1.5 md:col-span-2">
+              <label className="text-xs font-bold text-slate-700">
+                {isRTL ? "الشعار اللفظي / الاسلوجن (بالإنجليزية)" : "Academy Slogan (English)"}
+              </label>
+              <input
+                type="text"
+                value={brandingForm.academySloganEn}
+                onChange={e => setBrandingForm(prev => ({ ...prev, academySloganEn: e.target.value }))}
+                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-xs text-slate-800 font-semibold focus:bg-white focus:border-purple-500 transition"
+                placeholder="Excellence in Quranic & Academic Education"
+              />
+            </div>
+          </div>
+
+          {/* Logo Customizer */}
+          <div className="pt-6 border-t border-slate-100 flex flex-col gap-4">
+            <label className="text-xs font-bold text-slate-800">
+              {isRTL ? "شعار الأكاديمية (Official Logo)" : "Academy Logo Customizer"}
+            </label>
+
+            <div className="bg-slate-50 p-5 rounded-2xl border border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-6">
+              <div className="flex items-center gap-4">
+                <div className="w-16 h-16 rounded-2xl bg-[#0B192C] p-2 border border-slate-700 flex items-center justify-center shrink-0">
+                  {brandingForm.logoUrl ? (
+                    <img
+                      src={brandingForm.logoUrl}
+                      alt="Logo preview"
+                      className="w-full h-full object-contain"
+                      referrerPolicy="no-referrer"
+                    />
+                  ) : (
+                    <Logo size="md" variant="light" showSlogan={false} />
+                  )}
+                </div>
+                <div>
+                  <h4 className="text-sm font-bold text-slate-900">
+                    {brandingForm.academyNameAr || "GoStars Academy"}
+                  </h4>
+                  <p className="text-xs text-amber-600 font-medium mt-0.5">
+                    {brandingForm.academySloganAr || "Slogan"}
+                  </p>
+                  <span className="text-[10px] text-slate-400 mt-1 block">
+                    {brandingForm.logoUrl ? (isRTL ? "شعار مخصص مرفوع" : "Custom uploaded logo") : (isRTL ? "الشعار المتجهي الرسمي" : "Official Vector Crest")}
+                  </span>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <input
+                  type="file"
+                  ref={logoUploadRef}
+                  accept="image/*"
+                  className="hidden"
+                  onChange={e =>
+                    handleFileUpload(e, base64Url => {
+                      setBrandingForm(prev => ({ ...prev, logoUrl: base64Url }));
+                    })
+                  }
+                />
+                <button
+                  onClick={() => logoUploadRef.current?.click()}
+                  className="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold flex items-center gap-1.5 shadow-sm transition cursor-pointer"
+                >
+                  <Upload className="w-3.5 h-3.5" />
+                  <span>{isRTL ? "رفع شعار جديد (PNG/SVG/JPG)" : "Upload Logo"}</span>
+                </button>
+
+                {brandingForm.logoUrl && (
+                  <button
+                    onClick={() => setBrandingForm(prev => ({ ...prev, logoUrl: "" }))}
+                    className="p-2 rounded-xl bg-rose-50 text-rose-600 hover:bg-rose-100 border border-rose-200 transition cursor-pointer"
+                    title={isRTL ? "استعادة الشعار المتجهي الافتراضي" : "Reset to default crest"}
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* TAB 0.5: IMAGES & MEDIA */}
+      {activeTab === "images" && (
+        <div className="bg-white rounded-3xl border border-slate-200 p-6 sm:p-8 shadow-sm space-y-6">
+          <div className="border-b border-slate-100 pb-4 flex items-center justify-between">
+            <div>
+              <h3 className="text-base font-black text-slate-900">
+                {isRTL ? "استوديو الصور والخلفيات والمعرض (Media & Images)" : "Media & Images Studio"}
+              </h3>
+              <p className="text-xs text-slate-500 mt-0.5">
+                {isRTL ? "إدارة وتغيير أو حذف صور الواجهة الرئيسية، خلفيات الصفحات، ومعرض الأنشطة." : "Manage hero banners, page illustrations, and media gallery."}
+              </p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Hero Banner Background Image */}
+            <div className="bg-slate-50 p-5 rounded-2xl border border-slate-200 flex flex-col gap-3">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-slate-800">
+                  {isRTL ? "صورة خلفية القسم الرئيسي (Hero Banner)" : "Hero Banner Image"}
+                </span>
+                {imagesForm.heroBannerImage && (
+                  <button
+                    onClick={() => setImagesForm(prev => ({ ...prev, heroBannerImage: "" }))}
+                    className="text-xs text-rose-600 hover:underline flex items-center gap-1 cursor-pointer"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                    <span>{isRTL ? "حذف الصورة" : "Delete"}</span>
+                  </button>
+                )}
+              </div>
+
+              {imagesForm.heroBannerImage ? (
+                <div className="h-32 rounded-xl overflow-hidden border border-slate-300">
+                  <img
+                    src={imagesForm.heroBannerImage}
+                    alt="Hero banner"
+                    className="w-full h-full object-cover"
+                    referrerPolicy="no-referrer"
+                  />
+                </div>
+              ) : (
+                <div className="h-24 rounded-xl border border-dashed border-slate-300 bg-slate-100 flex items-center justify-center text-xs text-slate-400 font-semibold">
+                  {isRTL ? "لا توجد صورة خلفية مخصصة (الخلفية الافتراضية نشطة)" : "Default dark background gradient active"}
+                </div>
+              )}
+
+              <input
+                type="file"
+                ref={heroImageRef}
+                accept="image/*"
+                className="hidden"
+                onChange={e =>
+                  handleFileUpload(e, base64Url => {
+                    setImagesForm(prev => ({ ...prev, heroBannerImage: base64Url }));
+                  })
+                }
+              />
+              <button
+                onClick={() => heroImageRef.current?.click()}
+                className="w-full py-2 px-3 rounded-xl bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold flex items-center justify-center gap-1.5 transition cursor-pointer"
+              >
+                <Upload className="w-3.5 h-3.5" />
+                <span>{isRTL ? "تغيير صورة الهيدر الرئيسي" : "Upload Hero Banner"}</span>
+              </button>
+            </div>
+
+            {/* About Page Story Image */}
+            <div className="bg-slate-50 p-5 rounded-2xl border border-slate-200 flex flex-col gap-3">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-slate-800">
+                  {isRTL ? "صورة صفحة عن الأكاديمية (النشأة والمسيرة)" : "About Story Image"}
+                </span>
+                {imagesForm.aboutStoryImage && (
+                  <button
+                    onClick={() => setImagesForm(prev => ({ ...prev, aboutStoryImage: "" }))}
+                    className="text-xs text-rose-600 hover:underline flex items-center gap-1 cursor-pointer"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                    <span>{isRTL ? "حذف الصورة" : "Delete"}</span>
+                  </button>
+                )}
+              </div>
+
+              {imagesForm.aboutStoryImage ? (
+                <div className="h-32 rounded-xl overflow-hidden border border-slate-300">
+                  <img
+                    src={imagesForm.aboutStoryImage}
+                    alt="Story preview"
+                    className="w-full h-full object-cover"
+                    referrerPolicy="no-referrer"
+                  />
+                </div>
+              ) : (
+                <div className="h-24 rounded-xl border border-dashed border-slate-300 bg-slate-100 flex items-center justify-center text-xs text-slate-400 font-semibold">
+                  {isRTL ? "لا توجد صورة" : "No image selected"}
+                </div>
+              )}
+
+              <input
+                type="file"
+                ref={aboutImageRef}
+                accept="image/*"
+                className="hidden"
+                onChange={e =>
+                  handleFileUpload(e, base64Url => {
+                    setImagesForm(prev => ({ ...prev, aboutStoryImage: base64Url }));
+                  })
+                }
+              />
+              <button
+                onClick={() => aboutImageRef.current?.click()}
+                className="w-full py-2 px-3 rounded-xl bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold flex items-center justify-center gap-1.5 transition cursor-pointer"
+              >
+                <Upload className="w-3.5 h-3.5" />
+                <span>{isRTL ? "تغيير صورة النشأة والمسيرة" : "Upload Story Image"}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* TAB 1: HERO & MAIN COPY */}
       {activeTab === "hero" && (

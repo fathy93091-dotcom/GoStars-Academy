@@ -9,7 +9,8 @@ export type AppRoute =
   | 'login'
   | 'portal'
   | 'admin'
-  | 'teacher-platform';
+  | 'teacher-platform'
+  | 'site-editor';
 
 export interface NavItemConfig {
   id: AppRoute;

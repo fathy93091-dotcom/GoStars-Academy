@@ -97,7 +97,7 @@ ${aiInstructions || "اكتب تقريراً مشجعاً واحترافياً �
   if (client) {
     try {
       const response = await client.models.generateContent({
-        model: "gemini-3.6-flash",
+        model: "gemini-2.5-flash",
         contents: { parts },
         config: {
           systemInstruction,
@@ -108,8 +108,8 @@ ${aiInstructions || "اكتب تقريراً مشجعاً واحترافياً �
       if (response.text) {
         return response.text.trim();
       }
-    } catch (e) {
-      console.error("Gemini API call failed, generating rule-based report fallback:", e);
+    } catch (e: any) {
+      console.error("Gemini report generation notice (fallback used):", e?.message || "error");
     }
   }
 

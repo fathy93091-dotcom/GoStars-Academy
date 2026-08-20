@@ -538,8 +538,42 @@ export interface CmsContactSettings {
   addressEn: string;
 }
 
+export interface CmsBrandingSettings {
+  academyNameAr: string;
+  academyNameEn: string;
+  academySloganAr: string;
+  academySloganEn: string;
+  logoUrl?: string;
+  logoStyle?: "default_crest" | "modern_star" | "golden_book" | "luxury_crest" | "custom_image";
+  faviconUrl?: string;
+  primaryColor?: string;
+  accentColor?: string;
+}
+
+export interface CmsGalleryItem {
+  id: string;
+  url: string;
+  titleAr: string;
+  titleEn: string;
+  category?: string;
+}
+
+export interface CmsPageImages {
+  heroBannerImage?: string;
+  aboutStoryImage?: string;
+  aboutMissionImage?: string;
+  curriculaHeaderImage?: string;
+  honorRollHeroImage?: string;
+  contactHeaderImage?: string;
+  pricingBannerImage?: string;
+  teachersHeroImage?: string;
+  gallery?: CmsGalleryItem[];
+}
+
 export interface SiteContentSettings {
   id: string; // "main_config"
+  branding: CmsBrandingSettings;
+  images: CmsPageImages;
   hero: CmsHeroSettings;
   announcementBanner: CmsAnnouncementBanner;
   visibility: CmsSectionVisibility;

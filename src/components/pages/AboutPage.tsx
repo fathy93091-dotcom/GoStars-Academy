@@ -4,6 +4,7 @@ import { SectionTitle } from '../shared/SectionTitle';
 import { Badge } from '../shared/Badge';
 import { Button } from '../shared/Button';
 import { useLanguage } from '../../i18n/LanguageContext';
+import { useSiteContent } from '../../lib/SiteContentContext';
 import { AppRoute } from '../../navigation/routes';
 import { 
   Eye, 
@@ -23,8 +24,19 @@ interface AboutPageProps {
 }
 
 export function AboutPage({ onNavigate }: AboutPageProps) {
-  const { t, isRTL } = useLanguage();
+  const { t, isRTL, lang } = useLanguage();
+  const { content } = useSiteContent();
   const ArrowIcon = isRTL ? ArrowLeft : ArrowRight;
+
+  const about = content.about;
+  const images = content.images;
+
+  const storyTitle = lang === 'ar' ? (about?.storyTitleAr || t.aboutStoryTitle) : (about?.storyTitleEn || t.aboutStoryTitle);
+  const storyContent = lang === 'ar' ? (about?.storyContentAr || t.aboutStoryP1) : (about?.storyContentEn || t.aboutStoryP1);
+  const missionTitle = lang === 'ar' ? (about?.missionTitleAr || t.aboutMissionTitle) : (about?.missionTitleEn || t.aboutMissionTitle);
+  const missionContent = lang === 'ar' ? (about?.missionContentAr || t.aboutMissionText) : (about?.missionContentEn || t.aboutMissionText);
+  const visionTitle = lang === 'ar' ? (about?.visionTitleAr || t.aboutVisionTitle) : (about?.visionTitleEn || t.aboutVisionTitle);
+  const visionContent = lang === 'ar' ? (about?.visionContentAr || t.aboutVisionText) : (about?.visionContentEn || t.aboutVisionText);
 
   return (
     <div className="flex flex-col gap-16 sm:gap-24 py-10 sm:py-16">
@@ -34,7 +46,7 @@ export function AboutPage({ onNavigate }: AboutPageProps) {
           <div className="text-center max-w-3xl mx-auto">
             <Badge variant="gold" size="md" className="mb-4">
               <Sparkles className="w-3.5 h-3.5" />
-              <span>{t.brandSlogan}</span>
+              <span>{lang === 'ar' ? (content.branding?.academySloganAr || t.brandSlogan) : (content.branding?.academySloganEn || t.brandSlogan)}</span>
             </Badge>
             <h1 className="text-3xl sm:text-5xl font-black text-[#0B192C] tracking-tight mb-4">
               {t.aboutPageTitle}
@@ -55,13 +67,10 @@ export function AboutPage({ onNavigate }: AboutPageProps) {
                 {isRTL ? 'النشأة والمسيرة' : 'Our Story'}
               </span>
               <h2 className="text-2xl sm:text-3xl font-black text-[#0B192C]">
-                {t.aboutStoryTitle}
+                {storyTitle}
               </h2>
-              <p className="text-slate-600 text-sm sm:text-base leading-relaxed">
-                {t.aboutStoryP1}
-              </p>
-              <p className="text-slate-600 text-sm sm:text-base leading-relaxed">
-                {t.aboutStoryP2}
+              <p className="text-slate-600 text-sm sm:text-base leading-relaxed whitespace-pre-line">
+                {storyContent}
               </p>
 
               <div className="pt-2 flex flex-wrap gap-4">
@@ -76,20 +85,38 @@ export function AboutPage({ onNavigate }: AboutPageProps) {
               </div>
             </div>
 
-            <div className="lg:col-span-5 bg-[#0B192C] text-white rounded-3xl p-8 sm:p-10 border border-[#1E3A5F] flex flex-col gap-6 text-start">
-              <span className="text-xs font-bold text-[#C59B27] uppercase tracking-widest">
-                GoStars Academy Code
-              </span>
-              <h3 className="text-xl sm:text-2xl font-bold text-white leading-snug">
-                {isRTL ? '«العلم رحلة تبدأ بالإتقان وتكتمل بحسن الخلق»' : '"Knowledge is a journey beginning with precision and fulfilled with noble character."'}
-              </h3>
-              <p className="text-slate-300 text-xs sm:text-sm leading-relaxed">
-                {t.brandTagline}
-              </p>
-              <div className="pt-4 border-t border-slate-700 flex items-center justify-between text-xs text-slate-400">
-                <span>{isRTL ? 'إشراف أكاديمي مباشر' : 'Direct Academic Oversight'}</span>
-                <span className="text-amber-300 font-bold">100% Focused</span>
-              </div>
+            <div className="lg:col-span-5 flex flex-col gap-4">
+              {images?.aboutStoryImage ? (
+                <div className="rounded-3xl overflow-hidden shadow-lg border border-slate-200 h-64 sm:h-80 relative">
+                  <img
+                    src={images.aboutStoryImage}
+                    alt="Story"
+                    className="w-full h-full object-cover"
+                    referrerPolicy="no-referrer"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-transparent flex items-end p-6">
+                    <span className="text-white font-bold text-sm">
+                      {lang === 'ar' ? (content.branding?.academyNameAr || 'GoStars') : (content.branding?.academyNameEn || 'GoStars')}
+                    </span>
+                  </div>
+                </div>
+              ) : (
+                <div className="bg-[#0B192C] text-white rounded-3xl p-8 sm:p-10 border border-[#1E3A5F] flex flex-col gap-6 text-start">
+                  <span className="text-xs font-bold text-[#C59B27] uppercase tracking-widest">
+                    GoStars Academy Code
+                  </span>
+                  <h3 className="text-xl sm:text-2xl font-bold text-white leading-snug">
+                    {isRTL ? '«العلم رحلة تبدأ بالإتقان وتكتمل بحسن الخلق»' : '"Knowledge is a journey beginning with precision and fulfilled with noble character."'}
+                  </h3>
+                  <p className="text-slate-300 text-xs sm:text-sm leading-relaxed">
+                    {lang === 'ar' ? (content.branding?.academySloganAr || t.brandTagline) : (content.branding?.academySloganEn || t.brandTagline)}
+                  </p>
+                  <div className="pt-4 border-t border-slate-700 flex items-center justify-between text-xs text-slate-400">
+                    <span>{isRTL ? 'إشراف أكاديمي مباشر' : 'Direct Academic Oversight'}</span>
+                    <span className="text-amber-300 font-bold">100% Focused</span>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </Container>

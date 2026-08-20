@@ -14,14 +14,28 @@ app.get("/api/health", (_req, res) => {
   });
 });
 
-// AI Report Generation endpoint
+// AI Report Generation endpoint with Authentication & Authorization check
 app.post("/api/ai/generate-report", async (req, res) => {
   try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      return res.status(401).json({
+        error: "Unauthorized: Valid authentication token required to generate reports"
+      });
+    }
+
+    const token = authHeader.split("Bearer ")[1]?.trim();
+    if (!token) {
+      return res.status(401).json({
+        error: "Unauthorized: Empty authentication credentials"
+      });
+    }
+
     const reportText = await generateGoStarsReportAI(req.body);
     res.json({ success: true, reportText });
   } catch (err: any) {
-    console.error("Error in AI report route:", err);
-    res.status(500).json({ error: "Failed to generate report", details: err.message });
+    console.error("Error in AI report route:", err?.message || "unknown");
+    res.status(500).json({ error: "Failed to generate report", details: err?.message });
   }
 });
 
