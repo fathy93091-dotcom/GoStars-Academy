@@ -3,7 +3,7 @@ import { generateGoStarsReportAI } from "./ai";
 
 export const app = express();
 
-app.use(express.json());
+app.use(express.json({ limit: "15mb" }));
 
 // Health check
 app.get("/api/health", (_req, res) => {
@@ -15,7 +15,7 @@ app.get("/api/health", (_req, res) => {
 });
 
 // AI Report Generation endpoint with Authentication & Authorization check
-app.post("/api/ai/generate-report", async (req, res) => {
+const handleAiGenerateReport = async (req: express.Request, res: express.Response) => {
   try {
     const authHeader = req.headers.authorization;
     if (!authHeader || !authHeader.startsWith("Bearer ")) {
@@ -37,7 +37,10 @@ app.post("/api/ai/generate-report", async (req, res) => {
     console.error("Error in AI report route:", err?.message || "unknown");
     res.status(500).json({ error: "Failed to generate report", details: err?.message });
   }
-});
+};
+
+app.post("/api/ai/generate-report", handleAiGenerateReport);
+app.post("/api/generate-report", handleAiGenerateReport);
 
 // Global Express Error Handler
 app.use((err: any, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
