@@ -41,25 +41,28 @@ export function CurriculaPage({ onNavigate }: CurriculaPageProps) {
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [activeCurriculum, setActiveCurriculum] = useState<CurriculumItem | null>(null);
 
-  // Combine static mock curricula with dynamic CMS curricula
+  // Dynamic curricula from CMS
   const allCurricula = useMemo<CurriculumItem[]>(() => {
-    const dynamicItems: CurriculumItem[] = (content.curriculaList || [])
-      .filter(c => c.isActive)
-      .map(c => ({
-        id: c.id,
-        country: c.country,
-        stage: c.stage,
-        subject: c.subject,
-        title: { ar: c.titleAr, en: c.titleEn },
-        gradeLabel: { ar: c.gradeLabelAr, en: c.gradeLabelEn },
-        description: { ar: c.descriptionAr, en: c.descriptionEn },
-        objectives: { ar: c.objectivesAr || [], en: c.objectivesEn || [] },
-        topics: { ar: c.topicsAr || [], en: c.topicsEn || [] },
-        referenceBooks: { ar: ['المنهج المعتمد لوزارة التعليم'], en: ['Ministry Approved Standard Syllabus'] }
-      }));
+    const list = content?.curriculaList;
+    if (list && list.length > 0) {
+      return list
+        .filter(c => c && c.isActive !== false)
+        .map(c => ({
+          id: c.id,
+          country: c.country,
+          stage: c.stage,
+          subject: c.subject,
+          title: { ar: c.titleAr || '', en: c.titleEn || c.titleAr || '' },
+          gradeLabel: { ar: c.gradeLabelAr || '', en: c.gradeLabelEn || c.gradeLabelAr || '' },
+          description: { ar: c.descriptionAr || '', en: c.descriptionEn || c.descriptionAr || '' },
+          objectives: { ar: c.objectivesAr || [], en: c.objectivesEn || c.objectivesAr || [] },
+          topics: { ar: c.topicsAr || [], en: c.topicsEn || c.topicsAr || [] },
+          referenceBooks: { ar: ['المنهج المعتمد لوزارة التعليم'], en: ['Ministry Approved Standard Syllabus'] }
+        }));
+    }
 
-    return [...dynamicItems, ...MOCK_CURRICULA];
-  }, [content.curriculaList]);
+    return MOCK_CURRICULA;
+  }, [content?.curriculaList]);
 
   // Filtered list
   const filteredCurricula = useMemo(() => {
@@ -69,10 +72,14 @@ export function CurriculaPage({ onNavigate }: CurriculaPageProps) {
       const matchSubject = selectedSubject === 'all' || item.subject === selectedSubject;
       
       const q = searchQuery.trim().toLowerCase();
+      const titleText = (item.title?.[lang] || item.title?.ar || item.title?.en || '').toLowerCase();
+      const descText = (item.description?.[lang] || item.description?.ar || item.description?.en || '').toLowerCase();
+      const gradeText = (item.gradeLabel?.[lang] || item.gradeLabel?.ar || item.gradeLabel?.en || '').toLowerCase();
+
       const matchSearch = !q || 
-        item.title[lang].toLowerCase().includes(q) ||
-        item.description[lang].toLowerCase().includes(q) ||
-        item.gradeLabel[lang].toLowerCase().includes(q);
+        titleText.includes(q) ||
+        descText.includes(q) ||
+        gradeText.includes(q);
 
       return matchCountry && matchStage && matchSubject && matchSearch;
     });
@@ -238,21 +245,21 @@ export function CurriculaPage({ onNavigate }: CurriculaPageProps) {
                     {/* Tags row */}
                     <div className="flex flex-wrap items-center gap-2 mb-4">
                       <span className="text-xs font-bold bg-[#EFF6FF] text-[#0F4C81] px-3 py-1 rounded-md">
-                        {item.gradeLabel[lang]}
+                        {item.gradeLabel?.[lang] || item.gradeLabel?.ar || ''}
                       </span>
                       <span className="text-xs font-bold bg-[#FDF7E2] text-[#7E5B10] px-3 py-1 rounded-md">
-                        {COUNTRIES_CONFIG.find(c => c.id === item.country)?.label[lang] || item.country}
+                        {COUNTRIES_CONFIG.find(c => c.id === item.country)?.label?.[lang] || item.country}
                       </span>
                     </div>
 
                     {/* Title */}
                     <h2 className="text-lg sm:text-xl font-black text-[#0B192C] mb-3">
-                      {item.title[lang]}
+                      {item.title?.[lang] || item.title?.ar || ''}
                     </h2>
 
                     {/* Overview */}
                     <p className="text-slate-600 text-xs sm:text-sm leading-relaxed mb-6">
-                      {item.description[lang]}
+                      {item.description?.[lang] || item.description?.ar || ''}
                     </p>
 
                     {/* Objectives */}
@@ -262,7 +269,7 @@ export function CurriculaPage({ onNavigate }: CurriculaPageProps) {
                         <span>{t.curriculumObjectivesLabel}</span>
                       </h3>
                       <ul className="flex flex-col gap-2">
-                        {item.objectives[lang].map((obj, i) => (
+                        {(item.objectives?.[lang] || item.objectives?.ar || []).map((obj, i) => (
                           <li key={i} className="text-xs text-slate-700 flex items-start gap-2">
                             <CheckCircle2 className="w-3.5 h-3.5 text-[#0F4C81] shrink-0 mt-0.5" />
                             <span>{obj}</span>
@@ -279,7 +286,7 @@ export function CurriculaPage({ onNavigate }: CurriculaPageProps) {
                           <span>{t.curriculumTopicsLabel}</span>
                         </h3>
                         <div className="flex flex-wrap gap-1.5">
-                          {item.topics[lang].map((topic, i) => (
+                          {(item.topics?.[lang] || item.topics?.ar || []).map((topic, i) => (
                             <span
                               key={i}
                               className="text-[11px] font-medium bg-slate-100 text-slate-700 px-2 py-0.5 rounded-md"
@@ -296,7 +303,7 @@ export function CurriculaPage({ onNavigate }: CurriculaPageProps) {
                           <span>{t.curriculumMaterialsLabel}</span>
                         </h3>
                         <ul className="flex flex-col gap-1 text-[11px] text-slate-600">
-                          {item.referenceBooks[lang].map((book, i) => (
+                          {(item.referenceBooks?.[lang] || item.referenceBooks?.ar || []).map((book, i) => (
                             <li key={i}>• {book}</li>
                           ))}
                         </ul>

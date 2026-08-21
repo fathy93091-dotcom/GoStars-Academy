@@ -4,6 +4,7 @@ import { SectionTitle } from '../shared/SectionTitle';
 import { Badge } from '../shared/Badge';
 import { Button } from '../shared/Button';
 import { useLanguage } from '../../i18n/LanguageContext';
+import { useSiteContent } from '../../lib/SiteContentContext';
 import { AppRoute } from '../../navigation/routes';
 import { BRAND_TOKENS } from '../../theme/tokens';
 import { 
@@ -24,6 +25,7 @@ interface ContactPageProps {
 
 export function ContactPage({ onNavigate }: ContactPageProps) {
   const { t, isRTL, lang } = useLanguage();
+  const { content } = useSiteContent();
 
   const [formData, setFormData] = useState({
     parentName: '',
@@ -38,6 +40,16 @@ export function ContactPage({ onNavigate }: ContactPageProps) {
 
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
+
+  const contactAddress = lang === 'ar' 
+    ? (content.contact?.addressAr || BRAND_TOKENS.contactInfo.address.ar) 
+    : (content.contact?.addressEn || content.contact?.addressAr || BRAND_TOKENS.contactInfo.address.en);
+
+  const contactPhone = content.contact?.primaryPhone || content.contact?.phone || BRAND_TOKENS.contactInfo.phone;
+  const contactEmail = content.contact?.supportEmail || content.contact?.email || BRAND_TOKENS.contactInfo.email;
+  const contactHours = lang === 'ar'
+    ? (content.contact?.officeHoursAr || content.contact?.workingHoursAr || BRAND_TOKENS.contactInfo.workingHours.ar)
+    : (content.contact?.officeHoursEn || content.contact?.workingHoursEn || BRAND_TOKENS.contactInfo.workingHours.en);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -62,7 +74,7 @@ export function ContactPage({ onNavigate }: ContactPageProps) {
             <h1 className="text-3xl sm:text-5xl font-black text-[#0B192C] tracking-tight mb-4">
               {t.contactPageTitle}
             </h1>
-            <p className="text-slate-600 text-base sm:text-lg leading-relaxed">
+            <p className="text-slate-600 text-base sm:text-lg leading-relaxed mb-6">
               {t.contactPageSubtitle}
             </p>
           </div>
@@ -78,7 +90,7 @@ export function ContactPage({ onNavigate }: ContactPageProps) {
               <div className="bg-[#0B192C] text-white rounded-3xl p-8 sm:p-10 border border-[#1E3A5F] flex flex-col gap-6">
                 <div>
                   <span className="text-xs font-bold text-[#C59B27] uppercase tracking-widest block mb-2">
-                    GoStars Academy Info
+                    {lang === 'ar' ? (content.hero?.badgeAr || 'GoStars Academy Info') : (content.hero?.badgeEn || 'GoStars Academy Info')}
                   </span>
                   <h2 className="text-2xl font-black text-white mb-2">
                     {t.contactChannelsTitle}
@@ -100,7 +112,7 @@ export function ContactPage({ onNavigate }: ContactPageProps) {
                         {t.contactAddressLabel}
                       </span>
                       <span className="text-sm font-medium text-slate-200">
-                        {BRAND_TOKENS.contactInfo.address[lang]}
+                        {contactAddress}
                       </span>
                     </div>
                   </div>
@@ -114,7 +126,7 @@ export function ContactPage({ onNavigate }: ContactPageProps) {
                         {t.contactPhoneLabel}
                       </span>
                       <span dir="ltr" className="text-sm font-bold text-amber-300">
-                        {BRAND_TOKENS.contactInfo.phone}
+                        {contactPhone}
                       </span>
                     </div>
                   </div>
@@ -128,7 +140,7 @@ export function ContactPage({ onNavigate }: ContactPageProps) {
                         {t.contactEmailLabel}
                       </span>
                       <span className="text-sm font-medium text-slate-200">
-                        {BRAND_TOKENS.contactInfo.email}
+                        {contactEmail}
                       </span>
                     </div>
                   </div>
@@ -142,7 +154,7 @@ export function ContactPage({ onNavigate }: ContactPageProps) {
                         {t.contactHoursLabel}
                       </span>
                       <span className="text-sm font-medium text-slate-200">
-                        {BRAND_TOKENS.contactInfo.workingHours[lang]}
+                        {contactHours}
                       </span>
                     </div>
                   </div>

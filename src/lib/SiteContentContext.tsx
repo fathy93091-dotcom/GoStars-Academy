@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import { SiteContentSettings } from "../types";
-import { CmsDataEngine, DEFAULT_CMS_CONTENT } from "./cmsDataEngine";
+import { CmsDataEngine, DEFAULT_CMS_CONTENT, sanitizeSiteContent } from "./cmsDataEngine";
 
 interface SiteContentContextType {
   content: SiteContentSettings;
@@ -22,7 +22,7 @@ export const SiteContentProvider: React.FC<{ children: ReactNode }> = ({ childre
     // 1. Initial Load from engine (cache/firestore)
     CmsDataEngine.getSiteContent().then(initialData => {
       if (isMounted) {
-        setContent(initialData);
+        setContent(sanitizeSiteContent(initialData));
         setIsLoading(false);
       }
     });
@@ -30,7 +30,7 @@ export const SiteContentProvider: React.FC<{ children: ReactNode }> = ({ childre
     // 2. Real-time Subscription to Firestore /site_content/main_config
     const unsubscribe = CmsDataEngine.subscribeSiteContent(updated => {
       if (isMounted) {
-        setContent(updated);
+        setContent(sanitizeSiteContent(updated));
       }
     });
 
@@ -41,19 +41,20 @@ export const SiteContentProvider: React.FC<{ children: ReactNode }> = ({ childre
   }, []);
 
   const updateContent = async (newSettings: SiteContentSettings, updatedBy?: string) => {
-    setContent(newSettings); // Optimistic UI update
-    await CmsDataEngine.saveSiteContent(newSettings, updatedBy);
+    const sanitized = sanitizeSiteContent(newSettings);
+    setContent(sanitized); // Optimistic UI update
+    await CmsDataEngine.saveSiteContent(sanitized, updatedBy);
   };
 
   const resetContent = async (updatedBy?: string) => {
     const defaultData = await CmsDataEngine.resetToDefaults(updatedBy);
-    setContent(defaultData);
+    setContent(sanitizeSiteContent(defaultData));
   };
 
   const refreshContent = async () => {
     setIsLoading(true);
     const latest = await CmsDataEngine.getSiteContent();
-    setContent(latest);
+    setContent(sanitizeSiteContent(latest));
     setIsLoading(false);
   };
 

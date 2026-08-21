@@ -493,9 +493,9 @@ export interface CmsFaqItem {
 
 export interface CmsCurriculumItem {
   id: string;
-  country: "egypt" | "saudi" | "uae" | "kuwait" | "azhar" | "international";
-  stage: "foundation" | "primary" | "middle" | "secondary";
-  subject: "quran" | "arabic" | "islamic" | "science_math" | "nooraniyah";
+  country: "egypt" | "saudi" | "uae" | "kuwait" | "azhar" | "international" | string;
+  stage: "foundation" | "primary" | "middle" | "secondary" | string;
+  subject: "quran" | "arabic" | "english" | "islamic" | "science_math" | "nooraniyah" | "general" | string;
   titleAr: string;
   titleEn: string;
   gradeLabelAr: string;
@@ -506,10 +506,121 @@ export interface CmsCurriculumItem {
   topicsEn: string[];
   objectivesAr: string[];
   objectivesEn: string[];
+  durationAr?: string;
+  durationEn?: string;
   featuredOnHome: boolean;
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface CmsTeacherItem {
+  id: string;
+  nameAr: string;
+  nameEn: string;
+  titleAr: string;
+  titleEn: string;
+  specializationAr: string;
+  specializationEn: string;
+  experienceYears: number;
+  qualificationsAr: string[];
+  qualificationsEn: string[];
+  teachingPhilosophyAr: string;
+  teachingPhilosophyEn: string;
+  rating?: number;
+  studentsCount?: number;
+  badgeAr?: string;
+  badgeEn?: string;
+  avatarUrl?: string;
+  isActive: boolean;
+  order?: number;
+}
+
+export interface CmsPricingPlanItem {
+  id: string;
+  nameAr: string;
+  nameEn: string;
+  badgeAr?: string;
+  badgeEn?: string;
+  priceUsd: number;
+  priceSar: number;
+  priceEgp: number;
+  periodAr: string;
+  periodEn: string;
+  targetAudienceAr: string;
+  targetAudienceEn: string;
+  descriptionAr: string;
+  descriptionEn: string;
+  featuresAr: string[];
+  featuresEn: string[];
+  isPopular?: boolean;
+  ctaTextAr: string;
+  ctaTextEn: string;
+  isActive: boolean;
+  order?: number;
+}
+
+export interface CmsHonorStarItem {
+  id: string;
+  studentDisplayNameAr: string;
+  studentDisplayNameEn: string;
+  achievementTitleAr: string;
+  achievementTitleEn: string;
+  category: "quran_complete" | "quran_milestone" | "arabic_mastery" | "commitment" | "academic_excellence";
+  categoryBadgeAr: string;
+  categoryBadgeEn: string;
+  achievementDetailAr: string;
+  achievementDetailEn: string;
+  countryCode: string;
+  countryAr: string;
+  countryEn: string;
+  teacherPraiseAr: string;
+  teacherPraiseEn: string;
+  highlighted?: boolean;
+  isActive: boolean;
+  order?: number;
+}
+
+export interface CmsPillarItem {
+  id: string;
+  iconName: string;
+  titleAr: string;
+  titleEn: string;
+  descriptionAr: string;
+  descriptionEn: string;
+  badgeAr?: string;
+  badgeEn?: string;
+  isActive: boolean;
+}
+
+export interface CmsWhyGoStarsItem {
+  id: string;
+  iconName: string;
+  titleAr: string;
+  titleEn: string;
+  descriptionAr: string;
+  descriptionEn: string;
+  isActive: boolean;
+}
+
+export interface CmsStatItem {
+  id: string;
+  value: string;
+  labelAr: string;
+  labelEn: string;
+  descriptionAr?: string;
+  descriptionEn?: string;
+  isActive: boolean;
+}
+
+export interface CmsBottomCtaSettings {
+  titleAr: string;
+  titleEn: string;
+  subtitleAr: string;
+  subtitleEn: string;
+  buttonTextAr: string;
+  buttonTextEn: string;
+  buttonRoute: AppRoute;
 }
 
 export interface CmsAboutSettings {
@@ -536,6 +647,10 @@ export interface CmsContactSettings {
   telegramLink?: string;
   addressAr: string;
   addressEn: string;
+  phone?: string;
+  email?: string;
+  workingHoursAr?: string;
+  workingHoursEn?: string;
 }
 
 export interface CmsBrandingSettings {
@@ -581,6 +696,13 @@ export interface SiteContentSettings {
   contact: CmsContactSettings;
   faqList: CmsFaqItem[];
   curriculaList: CmsCurriculumItem[];
+  teachersList?: CmsTeacherItem[];
+  pricingPlansList?: CmsPricingPlanItem[];
+  honorStarsList?: CmsHonorStarItem[];
+  pillarsList?: CmsPillarItem[];
+  whyGoStarsList?: CmsWhyGoStarsItem[];
+  statsList?: CmsStatItem[];
+  bottomCta?: CmsBottomCtaSettings;
   updatedAt: string;
   updatedBy?: string;
 }

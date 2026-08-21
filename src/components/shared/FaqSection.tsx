@@ -51,8 +51,8 @@ export const FaqSection: React.FC<FaqSectionProps> = ({
         <div className="max-w-3xl mx-auto space-y-3">
           {activeFaqs.map(faq => {
             const isOpen = openFaqId === faq.id;
-            const question = lang === "ar" ? faq.questionAr : faq.questionEn;
-            const answer = lang === "ar" ? faq.answerAr : faq.answerEn;
+            const question = lang === "ar" ? faq.questionAr : (faq.questionEn || faq.questionAr);
+            const answer = lang === "ar" ? faq.answerAr : (faq.answerEn || faq.answerAr);
 
             return (
               <div

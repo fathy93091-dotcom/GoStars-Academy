@@ -1,8 +1,8 @@
 export interface CurriculumItem {
   id: string;
-  country: 'egypt' | 'saudi' | 'uae' | 'kuwait' | 'azhar' | 'international';
-  stage: 'foundation' | 'primary' | 'middle' | 'secondary';
-  subject: 'quran' | 'arabic' | 'islamic' | 'science_math' | 'nooraniyah';
+  country: 'egypt' | 'saudi' | 'uae' | 'kuwait' | 'azhar' | 'international' | string;
+  stage: 'foundation' | 'primary' | 'middle' | 'secondary' | string;
+  subject: 'quran' | 'arabic' | 'english' | 'islamic' | 'science_math' | 'nooraniyah' | 'general' | string;
   title: {
     ar: string;
     en: string;
@@ -51,8 +51,11 @@ export const SUBJECTS_CONFIG = [
   { id: 'all', label: { ar: 'كافة المواد', en: 'All Subjects' } },
   { id: 'quran', label: { ar: 'القرآن الكريم والتجويد', en: 'Quran & Tajweed' } },
   { id: 'arabic', label: { ar: 'اللغة العربية واللسان', en: 'Arabic Language' } },
+  { id: 'english', label: { ar: 'اللغة الإنجليزية', en: 'English Language' } },
   { id: 'islamic', label: { ar: 'التربية الإسلامية والفقه', en: 'Islamic Education & Fiqh' } },
+  { id: 'science_math', label: { ar: 'العلوم والرياضيات', en: 'Science & Math' } },
   { id: 'nooraniyah', label: { ar: 'القاعدة النورانية والتهجئة', en: 'Nooraniyah & Phonics' } },
+  { id: 'general', label: { ar: 'مواد عامة وتأسيسية', en: 'General Studies' } },
 ];
 
 export const MOCK_CURRICULA: CurriculumItem[] = [

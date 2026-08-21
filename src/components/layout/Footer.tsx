@@ -3,6 +3,7 @@ import { Container } from '../shared/Container';
 import { Logo } from '../shared/Logo';
 import { LanguageSwitcher } from '../shared/LanguageSwitcher';
 import { useLanguage } from '../../i18n/LanguageContext';
+import { useSiteContent } from '../../lib/SiteContentContext';
 import { AppRoute, PUBLIC_NAV_ITEMS } from '../../navigation/routes';
 import { BRAND_TOKENS } from '../../theme/tokens';
 import { Mail, Phone, MapPin, Clock } from 'lucide-react';
@@ -13,11 +14,30 @@ interface FooterProps {
 
 export function Footer({ onNavigate }: FooterProps) {
   const { t, lang } = useLanguage();
+  const { content } = useSiteContent();
 
   const handleNavClick = (route: AppRoute) => {
     onNavigate(route);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
+
+  const contact = content?.contact;
+  const branding = content?.branding;
+
+  const address = lang === 'ar' 
+    ? (contact?.addressAr || BRAND_TOKENS.contactInfo.address.ar) 
+    : (contact?.addressEn || contact?.addressAr || BRAND_TOKENS.contactInfo.address.en);
+
+  const phone = contact?.primaryPhone || contact?.phone || BRAND_TOKENS.contactInfo.phone;
+  const email = contact?.supportEmail || contact?.email || BRAND_TOKENS.contactInfo.email;
+  
+  const workingHours = lang === 'ar'
+    ? (contact?.officeHoursAr || contact?.workingHoursAr || BRAND_TOKENS.contactInfo.workingHours.ar)
+    : (contact?.officeHoursEn || contact?.workingHoursEn || BRAND_TOKENS.contactInfo.workingHours.en);
+
+  const slogan = lang === 'ar'
+    ? (branding?.academySloganAr || t.brandSlogan)
+    : (branding?.academySloganEn || branding?.academySloganAr || t.brandSlogan);
 
   return (
     <footer className="bg-[#0B192C] text-slate-300 pt-16 pb-12 border-t border-[#132238]">
@@ -40,7 +60,7 @@ export function Footer({ onNavigate }: FooterProps) {
             <div className="flex items-center gap-2 mt-2">
               <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs bg-slate-800/90 text-amber-300 border border-slate-700 font-semibold">
                 <span className="w-1.5 h-1.5 rounded-full bg-[#C59B27]" />
-                {t.brandSlogan}
+                {slogan}
               </span>
             </div>
           </div>
@@ -72,21 +92,21 @@ export function Footer({ onNavigate }: FooterProps) {
             <ul className="flex flex-col gap-3.5 text-sm text-slate-400">
               <li className="flex items-start gap-2.5">
                 <MapPin className="w-4 h-4 text-[#C59B27] shrink-0 mt-0.5" />
-                <span>{BRAND_TOKENS.contactInfo.address[lang]}</span>
+                <span>{address}</span>
               </li>
               <li className="flex items-center gap-2.5">
                 <Phone className="w-4 h-4 text-[#C59B27] shrink-0" />
                 <span dir="ltr" className="text-slate-200 font-bold">
-                  {BRAND_TOKENS.contactInfo.phone}
+                  {phone}
                 </span>
               </li>
               <li className="flex items-center gap-2.5">
                 <Mail className="w-4 h-4 text-[#C59B27] shrink-0" />
-                <span>{BRAND_TOKENS.contactInfo.email}</span>
+                <span>{email}</span>
               </li>
               <li className="flex items-center gap-2.5">
                 <Clock className="w-4 h-4 text-[#C59B27] shrink-0" />
-                <span>{BRAND_TOKENS.contactInfo.workingHours[lang]}</span>
+                <span>{workingHours}</span>
               </li>
             </ul>
           </div>

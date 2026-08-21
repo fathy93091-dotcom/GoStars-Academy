@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Container } from '../shared/Container';
 import { Button } from '../shared/Button';
 import { SectionTitle } from '../shared/SectionTitle';
@@ -7,8 +7,7 @@ import { FaqSection } from '../shared/FaqSection';
 import { useLanguage } from '../../i18n/LanguageContext';
 import { useSiteContent } from '../../lib/SiteContentContext';
 import { AppRoute } from '../../navigation/routes';
-import { MOCK_CURRICULA } from '../../data/curriculaData';
-import { MOCK_HONOR_STARS } from '../../data/honorRollData';
+import { CmsHeroSettings, CmsBottomCtaSettings } from '../../types';
 import { 
   BookOpen, 
   GraduationCap, 
@@ -22,38 +21,96 @@ import {
   HeartHandshake, 
   Clock, 
   FileText,
-  Star
+  Star,
+  ShieldCheck,
+  Target,
+  MessageCircle,
+  LucideIcon
 } from 'lucide-react';
 
 interface HomePageProps {
   onNavigate: (route: AppRoute) => void;
 }
 
+// Icon helper map
+const ICON_MAP: Record<string, LucideIcon> = {
+  GraduationCap,
+  BookOpen,
+  Compass,
+  Award,
+  Users,
+  Clock,
+  FileText,
+  HeartHandshake,
+  ShieldCheck,
+  Target,
+  MessageCircle,
+  Sparkles,
+  Star
+};
+
 export function HomePage({ onNavigate }: HomePageProps) {
   const { t, isRTL, lang } = useLanguage();
   const { content } = useSiteContent();
   const ArrowIcon = isRTL ? ArrowLeft : ArrowRight;
 
-  const visibility = content.visibility;
-  const hero = content.hero;
+  const visibility = content?.visibility || {
+    showHero: true,
+    showPillars: true,
+    showFeaturedCurricula: true,
+    showWhyGoStars: true,
+    showStats: true,
+    showHonorStars: true,
+    showFaq: true,
+    showBottomCta: true,
+  };
+  
+  const hero: Partial<CmsHeroSettings> = content?.hero || {};
+  const bottomCta: Partial<CmsBottomCtaSettings> = content?.bottomCta || {};
 
-  // Dynamic Curricula from CMS or fallback to Mock
-  const dynamicCurricula = content.curriculaList?.filter(c => c.isActive && c.featuredOnHome) || [];
-  const displayCurricula = dynamicCurricula.length > 0
-    ? dynamicCurricula.slice(0, 3)
-    : MOCK_CURRICULA.slice(0, 3);
+  // Dynamic Curricula from CMS
+  const displayCurricula = useMemo(() => {
+    const active = (content?.curriculaList || []).filter(c => c && c.isActive !== false);
+    const featured = active.filter(c => c.featuredOnHome);
+    return (featured.length > 0 ? featured : active).slice(0, 3);
+  }, [content?.curriculaList]);
 
-  const topHonorStars = MOCK_HONOR_STARS.filter(s => s.highlighted).slice(0, 2);
+  // Dynamic Honor Stars
+  const topHonorStars = useMemo(() => {
+    const active = (content?.honorStarsList || []).filter(s => s && s.isActive !== false);
+    const highlighted = active.filter(s => s.highlighted || s.category === 'quran_complete');
+    return (highlighted.length > 0 ? highlighted : active).slice(0, 2);
+  }, [content?.honorStarsList]);
+
+  // Dynamic Pillars
+  const pillars = useMemo(() => {
+    return (content?.pillarsList || []).filter(p => p && p.isActive !== false);
+  }, [content?.pillarsList]);
+
+  // Dynamic Why GoStars
+  const whyGoStarsList = useMemo(() => {
+    return (content?.whyGoStarsList || []).filter(w => w && w.isActive !== false);
+  }, [content?.whyGoStarsList]);
+
+  // Dynamic Stats
+  const statsList = useMemo(() => {
+    return (content?.statsList || []).filter(s => s && s.isActive !== false);
+  }, [content?.statsList]);
 
   // Dynamic Hero values
-  const heroBadge = lang === 'ar' ? (hero.badgeAr || t.homeHeroBadge) : (hero.badgeEn || t.homeHeroBadge);
-  const heroTitle = lang === 'ar' ? (hero.titleAr || t.homeHeroTitle) : (hero.titleEn || t.homeHeroTitle);
-  const heroSubtitle = lang === 'ar' ? (hero.subtitleAr || t.homeHeroSubtitle) : (hero.subtitleEn || t.homeHeroSubtitle);
-  const heroH1 = lang === 'ar' ? (hero.highlight1Ar || t.homeHeroHighlight1) : (hero.highlight1En || t.homeHeroHighlight1);
-  const heroH2 = lang === 'ar' ? (hero.highlight2Ar || t.homeHeroHighlight2) : (hero.highlight2En || t.homeHeroHighlight2);
-  const heroH3 = lang === 'ar' ? (hero.highlight3Ar || t.homeHeroHighlight3) : (hero.highlight3En || t.homeHeroHighlight3);
-  const heroCta1 = lang === 'ar' ? (hero.ctaPrimaryAr || t.homeHeroCtaPrimary) : (hero.ctaPrimaryEn || t.homeHeroCtaPrimary);
-  const heroCta2 = lang === 'ar' ? (hero.ctaSecondaryAr || t.homeHeroCtaSecondary) : (hero.ctaSecondaryEn || t.homeHeroCtaSecondary);
+  const heroBadge = lang === 'ar' ? (hero?.badgeAr || t.homeHeroBadge) : (hero?.badgeEn || hero?.badgeAr || t.homeHeroBadge);
+  const heroTitle = lang === 'ar' ? (hero?.titleAr || t.homeHeroTitle) : (hero?.titleEn || hero?.titleAr || t.homeHeroTitle);
+  const heroSubtitle = lang === 'ar' ? (hero?.subtitleAr || t.homeHeroSubtitle) : (hero?.subtitleEn || hero?.subtitleAr || t.homeHeroSubtitle);
+  const heroH1 = lang === 'ar' ? (hero?.highlight1Ar || t.homeHeroHighlight1) : (hero?.highlight1En || hero?.highlight1Ar || t.homeHeroHighlight1);
+  const heroH2 = lang === 'ar' ? (hero?.highlight2Ar || t.homeHeroHighlight2) : (hero?.highlight2En || hero?.highlight2Ar || t.homeHeroHighlight2);
+  const heroH3 = lang === 'ar' ? (hero?.highlight3Ar || t.homeHeroHighlight3) : (hero?.highlight3En || hero?.highlight3Ar || t.homeHeroHighlight3);
+  const heroCta1 = lang === 'ar' ? (hero?.ctaPrimaryAr || t.homeHeroCtaPrimary) : (hero?.ctaPrimaryEn || hero?.ctaPrimaryAr || t.homeHeroCtaPrimary);
+  const heroCta2 = lang === 'ar' ? (hero?.ctaSecondaryAr || t.homeHeroCtaSecondary) : (hero?.ctaSecondaryEn || hero?.ctaSecondaryAr || t.homeHeroCtaSecondary);
+
+  // Bottom CTA values
+  const bottomTitle = lang === 'ar' ? (bottomCta?.titleAr || t.ctaBannerTitle) : (bottomCta?.titleEn || bottomCta?.titleAr || t.ctaBannerTitle);
+  const bottomSubtitle = lang === 'ar' ? (bottomCta?.subtitleAr || t.ctaBannerSubtitle) : (bottomCta?.subtitleEn || bottomCta?.subtitleAr || t.ctaBannerSubtitle);
+  const bottomBtn = lang === 'ar' ? (bottomCta?.buttonTextAr || t.ctaBannerButton) : (bottomCta?.buttonTextEn || bottomCta?.buttonTextAr || t.ctaBannerButton);
 
   return (
     <div className="flex flex-col gap-20 sm:gap-28 pb-20">
@@ -97,18 +154,24 @@ export function HomePage({ onNavigate }: HomePageProps) {
               </p>
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 w-full max-w-2xl mb-10 text-xs sm:text-sm">
-                <div className="flex items-center justify-center gap-2 py-2 px-3 rounded-lg bg-white/5 border border-white/10 text-slate-200">
-                  <CheckCircle2 className="w-4 h-4 text-[#C59B27] shrink-0" />
-                  <span>{heroH1}</span>
-                </div>
-                <div className="flex items-center justify-center gap-2 py-2 px-3 rounded-lg bg-white/5 border border-white/10 text-slate-200">
-                  <CheckCircle2 className="w-4 h-4 text-[#C59B27] shrink-0" />
-                  <span>{heroH2}</span>
-                </div>
-                <div className="flex items-center justify-center gap-2 py-2 px-3 rounded-lg bg-white/5 border border-white/10 text-slate-200">
-                  <CheckCircle2 className="w-4 h-4 text-[#C59B27] shrink-0" />
-                  <span>{heroH3}</span>
-                </div>
+                {heroH1 && (
+                  <div className="flex items-center justify-center gap-2 py-2 px-3 rounded-lg bg-white/5 border border-white/10 text-slate-200">
+                    <CheckCircle2 className="w-4 h-4 text-[#C59B27] shrink-0" />
+                    <span>{heroH1}</span>
+                  </div>
+                )}
+                {heroH2 && (
+                  <div className="flex items-center justify-center gap-2 py-2 px-3 rounded-lg bg-white/5 border border-white/10 text-slate-200">
+                    <CheckCircle2 className="w-4 h-4 text-[#C59B27] shrink-0" />
+                    <span>{heroH2}</span>
+                  </div>
+                )}
+                {heroH3 && (
+                  <div className="flex items-center justify-center gap-2 py-2 px-3 rounded-lg bg-white/5 border border-white/10 text-slate-200">
+                    <CheckCircle2 className="w-4 h-4 text-[#C59B27] shrink-0" />
+                    <span>{heroH3}</span>
+                  </div>
+                )}
               </div>
 
               <div className="flex flex-col sm:flex-row items-center gap-4 w-full sm:w-auto">
@@ -138,7 +201,7 @@ export function HomePage({ onNavigate }: HomePageProps) {
       )}
 
       {/* 2. PILLARS OF EXCELLENCE */}
-      {visibility.showPillars && (
+      {visibility.showPillars && pillars.length > 0 && (
         <section>
           <Container size="lg">
             <SectionTitle
@@ -148,60 +211,49 @@ export function HomePage({ onNavigate }: HomePageProps) {
             />
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              <div className="bg-white rounded-2xl border border-[#E2E8F0] p-6 sm:p-7 flex flex-col text-start hover:border-[#0F4C81]/40 transition-colors">
-                <div className="w-12 h-12 rounded-xl bg-[#EFF6FF] text-[#0F4C81] flex items-center justify-center mb-5 font-bold">
-                  <GraduationCap className="w-6 h-6" />
-                </div>
-                <h3 className="text-base sm:text-lg font-bold text-[#0B192C] mb-2">
-                  {t.pillar1Title}
-                </h3>
-                <p className="text-slate-600 text-sm leading-relaxed">
-                  {t.pillar1Desc}
-                </p>
-              </div>
+              {pillars.map((pillar, idx) => {
+                const IconComponent = ICON_MAP[pillar.iconName || ''] || (idx % 2 === 0 ? GraduationCap : BookOpen);
+                const title = lang === 'ar' ? pillar.titleAr : (pillar.titleEn || pillar.titleAr);
+                const desc = lang === 'ar' ? pillar.descriptionAr : (pillar.descriptionEn || pillar.descriptionAr);
+                const badge = lang === 'ar' ? pillar.badgeAr : (pillar.badgeEn || pillar.badgeAr);
+                const isGold = idx % 2 === 1;
 
-              <div className="bg-white rounded-2xl border border-[#E2E8F0] p-6 sm:p-7 flex flex-col text-start hover:border-[#0F4C81]/40 transition-colors">
-                <div className="w-12 h-12 rounded-xl bg-[#FDF7E2] text-[#7E5B10] flex items-center justify-center mb-5 font-bold">
-                  <BookOpen className="w-6 h-6" />
-                </div>
-                <h3 className="text-base sm:text-lg font-bold text-[#0B192C] mb-2">
-                  {t.pillar2Title}
-                </h3>
-                <p className="text-slate-600 text-sm leading-relaxed">
-                  {t.pillar2Desc}
-                </p>
-              </div>
+                return (
+                  <div
+                    key={pillar.id}
+                    className="bg-white rounded-2xl border border-[#E2E8F0] p-6 sm:p-7 flex flex-col text-start hover:border-[#0F4C81]/40 transition-colors justify-between"
+                  >
+                    <div>
+                      <div className="flex items-center justify-between gap-2 mb-4">
+                        <div className={`w-12 h-12 rounded-xl flex items-center justify-center font-bold ${
+                          isGold ? 'bg-[#FDF7E2] text-[#7E5B10]' : 'bg-[#EFF6FF] text-[#0F4C81]'
+                        }`}>
+                          <IconComponent className="w-6 h-6" />
+                        </div>
+                        {badge && (
+                          <span className="text-[11px] font-bold px-2 py-0.5 rounded-md bg-slate-100 text-slate-600">
+                            {badge}
+                          </span>
+                        )}
+                      </div>
 
-              <div className="bg-white rounded-2xl border border-[#E2E8F0] p-6 sm:p-7 flex flex-col text-start hover:border-[#0F4C81]/40 transition-colors">
-                <div className="w-12 h-12 rounded-xl bg-[#EFF6FF] text-[#0F4C81] flex items-center justify-center mb-5 font-bold">
-                  <Compass className="w-6 h-6" />
-                </div>
-                <h3 className="text-base sm:text-lg font-bold text-[#0B192C] mb-2">
-                  {t.pillar3Title}
-                </h3>
-                <p className="text-slate-600 text-sm leading-relaxed">
-                  {t.pillar3Desc}
-                </p>
-              </div>
-
-              <div className="bg-white rounded-2xl border border-[#E2E8F0] p-6 sm:p-7 flex flex-col text-start hover:border-[#0F4C81]/40 transition-colors">
-                <div className="w-12 h-12 rounded-xl bg-[#FDF7E2] text-[#7E5B10] flex items-center justify-center mb-5 font-bold">
-                  <Award className="w-6 h-6" />
-                </div>
-                <h3 className="text-base sm:text-lg font-bold text-[#0B192C] mb-2">
-                  {t.pillar4Title}
-                </h3>
-                <p className="text-slate-600 text-sm leading-relaxed">
-                  {t.pillar4Desc}
-                </p>
-              </div>
+                      <h3 className="text-base sm:text-lg font-bold text-[#0B192C] mb-2">
+                        {title}
+                      </h3>
+                      <p className="text-slate-600 text-sm leading-relaxed">
+                        {desc}
+                      </p>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </Container>
         </section>
       )}
 
       {/* 3. FEATURED CURRICULA PREVIEW */}
-      {visibility.showFeaturedCurricula && (
+      {visibility.showFeaturedCurricula && displayCurricula.length > 0 && (
         <section className="bg-white py-16 sm:py-20 border-y border-[#E2E8F0]">
           <Container size="lg">
             <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12">
@@ -229,10 +281,11 @@ export function HomePage({ onNavigate }: HomePageProps) {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {displayCurricula.map((curr: any) => {
-                const title = curr.title?.[lang] || curr.titleAr || (lang === 'ar' ? curr.titleAr : curr.titleEn);
-                const gradeLabel = curr.gradeLabel?.[lang] || curr.gradeLabelAr || (lang === 'ar' ? curr.gradeLabelAr : curr.gradeLabelEn);
-                const desc = curr.description?.[lang] || curr.descriptionAr || (lang === 'ar' ? curr.descriptionAr : curr.descriptionEn);
+              {displayCurricula.map((curr) => {
+                const title = lang === 'ar' ? curr.titleAr : (curr.titleEn || curr.titleAr);
+                const gradeLabel = lang === 'ar' ? curr.gradeLabelAr : (curr.gradeLabelEn || curr.gradeLabelAr);
+                const desc = lang === 'ar' ? curr.descriptionAr : (curr.descriptionEn || curr.descriptionAr);
+                const duration = lang === 'ar' ? curr.durationAr : (curr.durationEn || curr.durationAr);
 
                 return (
                   <div
@@ -240,10 +293,15 @@ export function HomePage({ onNavigate }: HomePageProps) {
                     className="bg-[#F7F9FC] rounded-2xl border border-slate-200 p-6 flex flex-col justify-between text-start hover:border-purple-300 transition"
                   >
                     <div>
-                      <div className="flex items-center gap-2 mb-3">
+                      <div className="flex items-center justify-between gap-2 mb-3">
                         <span className="text-xs font-bold text-[#0F4C81] bg-[#EFF6FF] px-2.5 py-1 rounded-md">
                           {gradeLabel}
                         </span>
+                        {duration && (
+                          <span className="text-xs text-slate-400 font-medium">
+                            {duration}
+                          </span>
+                        )}
                       </div>
 
                       <h3 className="font-bold text-base text-[#0B192C] mb-2">
@@ -272,7 +330,7 @@ export function HomePage({ onNavigate }: HomePageProps) {
       )}
 
       {/* 4. WHY CHOOSE GOSTARS (VALUES & METHODOLOGY) */}
-      {visibility.showWhyGoStars && (
+      {visibility.showWhyGoStars && whyGoStarsList.length > 0 && (
         <section>
           <Container size="lg">
             <SectionTitle
@@ -282,61 +340,33 @@ export function HomePage({ onNavigate }: HomePageProps) {
             />
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="bg-white rounded-2xl border border-[#E2E8F0] p-6 sm:p-8 flex items-start gap-4 text-start">
-                <div className="w-12 h-12 rounded-xl bg-[#EFF6FF] text-[#0F4C81] flex items-center justify-center shrink-0">
-                  <Users className="w-6 h-6" />
-                </div>
-                <div>
-                  <h3 className="text-base font-bold text-[#0B192C] mb-1.5">
-                    {t.homeFeature1Title}
-                  </h3>
-                  <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
-                    {t.homeFeature1Desc}
-                  </p>
-                </div>
-              </div>
+              {whyGoStarsList.map((item, idx) => {
+                const IconComponent = ICON_MAP[item.iconName || ''] || (idx % 2 === 0 ? Users : Clock);
+                const title = lang === 'ar' ? item.titleAr : (item.titleEn || item.titleAr);
+                const desc = lang === 'ar' ? item.descriptionAr : (item.descriptionEn || item.descriptionAr);
+                const isGold = idx % 2 === 1;
 
-              <div className="bg-white rounded-2xl border border-[#E2E8F0] p-6 sm:p-8 flex items-start gap-4 text-start">
-                <div className="w-12 h-12 rounded-xl bg-[#FDF7E2] text-[#7E5B10] flex items-center justify-center shrink-0">
-                  <Clock className="w-6 h-6" />
-                </div>
-                <div>
-                  <h3 className="text-base font-bold text-[#0B192C] mb-1.5">
-                    {t.homeFeature2Title}
-                  </h3>
-                  <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
-                    {t.homeFeature2Desc}
-                  </p>
-                </div>
-              </div>
-
-              <div className="bg-white rounded-2xl border border-[#E2E8F0] p-6 sm:p-8 flex items-start gap-4 text-start">
-                <div className="w-12 h-12 rounded-xl bg-[#FDF7E2] text-[#7E5B10] flex items-center justify-center shrink-0">
-                  <FileText className="w-6 h-6" />
-                </div>
-                <div>
-                  <h3 className="text-base font-bold text-[#0B192C] mb-1.5">
-                    {t.homeFeature3Title}
-                  </h3>
-                  <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
-                    {t.homeFeature3Desc}
-                  </p>
-                </div>
-              </div>
-
-              <div className="bg-white rounded-2xl border border-[#E2E8F0] p-6 sm:p-8 flex items-start gap-4 text-start">
-                <div className="w-12 h-12 rounded-xl bg-[#EFF6FF] text-[#0F4C81] flex items-center justify-center shrink-0">
-                  <HeartHandshake className="w-6 h-6" />
-                </div>
-                <div>
-                  <h3 className="text-base font-bold text-[#0B192C] mb-1.5">
-                    {t.homeFeature4Title}
-                  </h3>
-                  <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
-                    {t.homeFeature4Desc}
-                  </p>
-                </div>
-              </div>
+                return (
+                  <div
+                    key={item.id}
+                    className="bg-white rounded-2xl border border-[#E2E8F0] p-6 sm:p-8 flex items-start gap-4 text-start hover:border-[#0F4C81]/30 transition"
+                  >
+                    <div className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 ${
+                      isGold ? 'bg-[#FDF7E2] text-[#7E5B10]' : 'bg-[#EFF6FF] text-[#0F4C81]'
+                    }`}>
+                      <IconComponent className="w-6 h-6" />
+                    </div>
+                    <div>
+                      <h3 className="text-base font-bold text-[#0B192C] mb-1.5">
+                        {title}
+                      </h3>
+                      <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
+                        {desc}
+                      </p>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </Container>
         </section>
@@ -370,37 +400,47 @@ export function HomePage({ onNavigate }: HomePageProps) {
 
             {topHonorStars.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {topHonorStars.map((star) => (
-                  <div
-                    key={star.id}
-                    className="bg-white/10 backdrop-blur-xs border border-white/15 rounded-2xl p-6 sm:p-7 text-start flex flex-col justify-between"
-                  >
-                    <div>
-                      <div className="flex items-center justify-between gap-3 mb-4">
-                        <span className="text-sm font-bold text-amber-300 bg-amber-400/10 px-3 py-1 rounded-lg border border-amber-400/20">
-                          {star.categoryBadge[lang]}
-                        </span>
-                        <span className="text-xs text-slate-300 font-medium flex items-center gap-1.5">
-                          <span>{star.country.code}</span>
-                          <span>{star.country[lang]}</span>
-                        </span>
+                {topHonorStars.map((star) => {
+                  const name = lang === 'ar' ? star.studentDisplayNameAr : (star.studentDisplayNameEn || star.studentDisplayNameAr);
+                  const badge = lang === 'ar' ? star.categoryBadgeAr : (star.categoryBadgeEn || star.categoryBadgeAr);
+                  const countryName = lang === 'ar' ? star.countryAr : (star.countryEn || star.countryAr);
+                  const detail = lang === 'ar' ? star.achievementDetailAr : (star.achievementDetailEn || star.achievementDetailAr);
+                  const praise = lang === 'ar' ? star.teacherPraiseAr : (star.teacherPraiseEn || star.teacherPraiseAr);
+
+                  return (
+                    <div
+                      key={star.id}
+                      className="bg-white/10 backdrop-blur-xs border border-white/15 rounded-2xl p-6 sm:p-7 text-start flex flex-col justify-between"
+                    >
+                      <div>
+                        <div className="flex items-center justify-between gap-3 mb-4">
+                          <span className="text-sm font-bold text-amber-300 bg-amber-400/10 px-3 py-1 rounded-lg border border-amber-400/20">
+                            {badge}
+                          </span>
+                          <span className="text-xs text-slate-300 font-medium flex items-center gap-1.5">
+                            <span>{star.countryCode}</span>
+                            <span>{countryName}</span>
+                          </span>
+                        </div>
+
+                        <h3 className="text-lg font-bold text-white mb-2">
+                          {name}
+                        </h3>
+                        <p className="text-xs sm:text-sm text-slate-300 leading-relaxed mb-4">
+                          {detail}
+                        </p>
                       </div>
 
-                      <h3 className="text-lg font-bold text-white mb-2">
-                        {star.studentDisplayName[lang]}
-                      </h3>
-                      <p className="text-xs sm:text-sm text-slate-300 leading-relaxed mb-4">
-                        {star.achievementDetail[lang]}
-                      </p>
+                      {praise && (
+                        <div className="pt-4 border-t border-white/10">
+                          <p className="text-xs italic text-amber-200/90 leading-relaxed">
+                            {praise}
+                          </p>
+                        </div>
+                      )}
                     </div>
-
-                    <div className="pt-4 border-t border-white/10">
-                      <p className="text-xs italic text-amber-200/90 leading-relaxed">
-                        {star.teacherPraise[lang]}
-                      </p>
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             ) : (
               <div className="bg-white/10 backdrop-blur-xs border border-white/15 rounded-2xl p-8 sm:p-10 text-center max-w-xl mx-auto">
@@ -429,45 +469,33 @@ export function HomePage({ onNavigate }: HomePageProps) {
       )}
 
       {/* 6. STATS & IMPACT */}
-      {visibility.showStats && (
+      {visibility.showStats && statsList.length > 0 && (
         <section>
           <Container size="lg">
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 text-center">
-              <div className="bg-white rounded-2xl border border-[#E2E8F0] p-6 sm:p-8">
-                <span className="block text-2xl sm:text-4xl font-black text-[#0F4C81] mb-1">
-                  {t.stat1Value}
-                </span>
-                <span className="text-xs sm:text-sm text-slate-600 font-semibold">
-                  {t.stat1Label}
-                </span>
-              </div>
+              {statsList.map((stat, idx) => {
+                const label = lang === 'ar' ? stat.labelAr : (stat.labelEn || stat.labelAr);
+                const desc = lang === 'ar' ? stat.descriptionAr : (stat.descriptionEn || stat.descriptionAr);
+                const isGold = idx % 2 === 1;
 
-              <div className="bg-white rounded-2xl border border-[#E2E8F0] p-6 sm:p-8">
-                <span className="block text-2xl sm:text-4xl font-black text-[#7E5B10] mb-1">
-                  {t.stat2Value}
-                </span>
-                <span className="text-xs sm:text-sm text-slate-600 font-semibold">
-                  {t.stat2Label}
-                </span>
-              </div>
-
-              <div className="bg-white rounded-2xl border border-[#E2E8F0] p-6 sm:p-8">
-                <span className="block text-2xl sm:text-4xl font-black text-[#0F4C81] mb-1">
-                  {t.stat3Value}
-                </span>
-                <span className="text-xs sm:text-sm text-slate-600 font-semibold">
-                  {t.stat3Label}
-                </span>
-              </div>
-
-              <div className="bg-white rounded-2xl border border-[#E2E8F0] p-6 sm:p-8">
-                <span className="block text-2xl sm:text-4xl font-black text-[#7E5B10] mb-1">
-                  {t.stat4Value}
-                </span>
-                <span className="text-xs sm:text-sm text-slate-600 font-semibold">
-                  {t.stat4Label}
-                </span>
-              </div>
+                return (
+                  <div key={stat.id} className="bg-white rounded-2xl border border-[#E2E8F0] p-6 sm:p-8 flex flex-col justify-center">
+                    <span className={`block text-2xl sm:text-4xl font-black mb-1 ${
+                      isGold ? 'text-[#7E5B10]' : 'text-[#0F4C81]'
+                    }`}>
+                      {stat.value}
+                    </span>
+                    <span className="text-xs sm:text-sm text-slate-900 font-bold mb-1">
+                      {label}
+                    </span>
+                    {desc && (
+                      <span className="text-[11px] text-slate-500 leading-snug">
+                        {desc}
+                      </span>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           </Container>
         </section>
@@ -482,13 +510,13 @@ export function HomePage({ onNavigate }: HomePageProps) {
           <Container size="lg">
             <div className="bg-[#0B192C] text-white rounded-3xl p-8 sm:p-14 text-center flex flex-col items-center justify-center relative overflow-hidden border border-[#1E3A5F]">
               <span className="text-xs font-bold uppercase tracking-widest text-[#C59B27] mb-3">
-                GoStars Educational Academy
+                {lang === 'ar' ? (content.branding?.academyNameAr || 'GoStars Educational Academy') : (content.branding?.academyNameEn || 'GoStars Educational Academy')}
               </span>
               <h2 className="text-2xl sm:text-4xl font-black mb-4 max-w-2xl leading-tight">
-                {t.ctaBannerTitle}
+                {bottomTitle}
               </h2>
               <p className="text-slate-300 text-xs sm:text-base max-w-xl mb-8 leading-relaxed">
-                {t.ctaBannerSubtitle}
+                {bottomSubtitle}
               </p>
 
               <Button
@@ -498,7 +526,7 @@ export function HomePage({ onNavigate }: HomePageProps) {
                 icon={<ArrowIcon className="w-5 h-5" />}
                 iconPosition="end"
               >
-                {t.ctaBannerButton}
+                {bottomBtn}
               </Button>
             </div>
           </Container>

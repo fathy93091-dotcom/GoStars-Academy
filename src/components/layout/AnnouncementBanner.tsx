@@ -14,14 +14,14 @@ export const AnnouncementBanner: React.FC<AnnouncementBannerProps> = ({ onNaviga
   const { isRTL, lang } = useLanguage();
   const [isDismissed, setIsDismissed] = useState(false);
 
-  const banner = content.announcementBanner;
-  const isVisible = content.visibility.showAnnouncementBanner && banner.isActive && !isDismissed;
+  const banner = content?.announcementBanner;
+  const isVisible = content?.visibility?.showAnnouncementBanner && banner?.isActive && !isDismissed;
 
-  if (!isVisible) return null;
+  if (!isVisible || !banner) return null;
 
-  const text = lang === "ar" ? banner.textAr : banner.textEn;
-  const badge = lang === "ar" ? banner.badgeAr : banner.badgeEn;
-  const linkText = lang === "ar" ? banner.linkTextAr : banner.linkTextEn;
+  const text = lang === "ar" ? banner.textAr : (banner.textEn || banner.textAr);
+  const badge = lang === "ar" ? banner.badgeAr : (banner.badgeEn || banner.badgeAr);
+  const linkText = lang === "ar" ? banner.linkTextAr : (banner.linkTextEn || banner.linkTextAr);
   const ArrowIcon = isRTL ? ArrowLeft : ArrowRight;
 
   const colorStyles = {
@@ -30,7 +30,7 @@ export const AnnouncementBanner: React.FC<AnnouncementBannerProps> = ({ onNaviga
     emerald: "bg-gradient-to-r from-emerald-700 via-emerald-600 to-teal-700 text-white border-emerald-500",
     purple: "bg-gradient-to-r from-purple-700 via-indigo-600 to-purple-700 text-white border-purple-500",
     rose: "bg-gradient-to-r from-rose-700 via-rose-600 to-pink-700 text-white border-rose-500"
-  }[banner.type || "gold"];
+  }[banner.type || "gold"] || "bg-gradient-to-r from-amber-500 via-amber-400 to-amber-500 text-slate-950 border-amber-300";
 
   return (
     <div className={`relative py-2 px-4 border-b text-xs transition-all duration-300 shadow-xs z-40 ${colorStyles}`}>

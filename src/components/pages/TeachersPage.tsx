@@ -4,8 +4,9 @@ import { SectionTitle } from '../shared/SectionTitle';
 import { Badge } from '../shared/Badge';
 import { Button } from '../shared/Button';
 import { useLanguage } from '../../i18n/LanguageContext';
+import { useSiteContent } from '../../lib/SiteContentContext';
 import { AppRoute } from '../../navigation/routes';
-import { MOCK_TEACHERS, TeacherPublicProfile } from '../../data/teachersData';
+import { CmsTeacherItem } from '../../types';
 import { 
   GraduationCap, 
   Award, 
@@ -16,7 +17,8 @@ import {
   Sparkles,
   ArrowRight,
   ArrowLeft,
-  Users
+  Users,
+  Star
 } from 'lucide-react';
 
 interface TeachersPageProps {
@@ -25,6 +27,7 @@ interface TeachersPageProps {
 
 export function TeachersPage({ onNavigate }: TeachersPageProps) {
   const { t, isRTL, lang } = useLanguage();
+  const { content } = useSiteContent();
   const ArrowIcon = isRTL ? ArrowLeft : ArrowRight;
 
   const [selectedSpecialization, setSelectedSpecialization] = useState<string>('all');
@@ -33,14 +36,38 @@ export function TeachersPage({ onNavigate }: TeachersPageProps) {
     { id: 'all', label: { ar: 'كافة التخصصات', en: 'All Disciplines' } },
     { id: 'quran', label: { ar: 'القرآن الكريم والقراءات', en: 'Quran & Recitation' } },
     { id: 'arabic', label: { ar: 'اللغة العربية واللسان', en: 'Arabic Language' } },
+    { id: 'english', label: { ar: 'اللغة الإنجليزية', en: 'English Language' } },
     { id: 'islamic', label: { ar: 'العلوم الشرعية والسيرة', en: 'Islamic Studies' } },
     { id: 'foundation', label: { ar: 'التأسيس والقاعدة النورانية', en: 'Foundation Phonics' } },
   ];
 
+  const teachersList = useMemo(() => {
+    return (content.teachersList || []).filter(t => t.isActive !== false);
+  }, [content.teachersList]);
+
   const filteredTeachers = useMemo(() => {
-    if (selectedSpecialization === 'all') return MOCK_TEACHERS;
-    return MOCK_TEACHERS.filter((teacher) => teacher.specialization === selectedSpecialization);
-  }, [selectedSpecialization]);
+    if (selectedSpecialization === 'all') return teachersList;
+    return teachersList.filter((teacher) => {
+      const specAr = teacher.specializationAr?.toLowerCase() || '';
+      const specEn = teacher.specializationEn?.toLowerCase() || '';
+      if (selectedSpecialization === 'quran') {
+        return specAr.includes('قرآن') || specAr.includes('تجويد') || specAr.includes('قراءات') || specEn.includes('quran');
+      }
+      if (selectedSpecialization === 'arabic') {
+        return specAr.includes('عربية') || specAr.includes('لغة عربية') || specEn.includes('arabic');
+      }
+      if (selectedSpecialization === 'english') {
+        return specAr.includes('إنجليزية') || specAr.includes('انجليزية') || specEn.includes('english');
+      }
+      if (selectedSpecialization === 'islamic') {
+        return specAr.includes('شرعية') || specAr.includes('إسلامية') || specEn.includes('islamic');
+      }
+      if (selectedSpecialization === 'foundation') {
+        return specAr.includes('نورانية') || specAr.includes('تأسيس') || specEn.includes('foundation') || specEn.includes('nooraniyah');
+      }
+      return true;
+    });
+  }, [teachersList, selectedSpecialization]);
 
   return (
     <div className="flex flex-col gap-14 sm:gap-20 py-10 sm:py-16">
@@ -91,76 +118,112 @@ export function TeachersPage({ onNavigate }: TeachersPageProps) {
         <Container size="lg">
           {filteredTeachers.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {filteredTeachers.map((teacher) => (
-                <article
-                  key={teacher.id}
-                  className="bg-white rounded-3xl border border-[#E2E8F0] p-6 sm:p-7 flex flex-col justify-between text-start hover:border-[#0F4C81]/40 hover:shadow-xs transition-all"
-                >
-                  <div>
-                    {/* Top Badge and Experience */}
-                    <div className="flex items-center justify-between gap-2 mb-4">
-                      <span className="text-xs font-bold text-[#0F4C81] bg-[#EFF6FF] px-3 py-1 rounded-lg border border-[#DBEAFE]">
-                        {teacher.specializationLabel[lang]}
-                      </span>
+              {filteredTeachers.map((teacher) => {
+                const name = lang === 'ar' ? teacher.nameAr : (teacher.nameEn || teacher.nameAr);
+                const title = lang === 'ar' ? teacher.titleAr : (teacher.titleEn || teacher.titleAr);
+                const specialization = lang === 'ar' ? teacher.specializationAr : (teacher.specializationEn || teacher.specializationAr);
+                const badge = lang === 'ar' ? teacher.badgeAr : (teacher.badgeEn || teacher.badgeAr);
+                const qualifications = lang === 'ar' ? teacher.qualificationsAr : (teacher.qualificationsEn || teacher.qualificationsAr);
+                const philosophy = lang === 'ar' ? teacher.teachingPhilosophyAr : (teacher.teachingPhilosophyEn || teacher.teachingPhilosophyAr);
 
-                      {teacher.featuredTag && (
-                        <span className="text-[11px] font-bold text-[#7E5B10] bg-[#FDF7E2] px-2.5 py-0.5 rounded-md border border-[#FEEFC3]">
-                          {teacher.featuredTag[lang]}
+                return (
+                  <article
+                    key={teacher.id}
+                    className="bg-white rounded-3xl border border-[#E2E8F0] p-6 sm:p-7 flex flex-col justify-between text-start hover:border-[#0F4C81]/40 hover:shadow-md transition-all group"
+                  >
+                    <div>
+                      {/* Teacher Avatar & Badges Header */}
+                      <div className="flex items-start justify-between gap-4 mb-4">
+                        <div className="flex items-center gap-3">
+                          {teacher.avatarUrl ? (
+                            <div className="w-14 h-14 rounded-2xl overflow-hidden border-2 border-amber-200 shadow-sm shrink-0">
+                              <img
+                                src={teacher.avatarUrl}
+                                alt={name}
+                                className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                                referrerPolicy="no-referrer"
+                              />
+                            </div>
+                          ) : (
+                            <div className="w-14 h-14 rounded-2xl bg-amber-50 text-[#C59B27] border border-amber-200 flex items-center justify-center font-black text-xl shrink-0">
+                              <GraduationCap className="w-7 h-7" />
+                            </div>
+                          )}
+                          <div>
+                            <h2 className="text-base sm:text-lg font-black text-[#0B192C] leading-snug">
+                              {name}
+                            </h2>
+                            <p className="text-xs font-semibold text-slate-500">
+                              {title}
+                            </p>
+                          </div>
+                        </div>
+
+                        {badge && (
+                          <span className="text-[10px] font-bold text-[#7E5B10] bg-[#FDF7E2] px-2.5 py-0.5 rounded-full border border-[#FEEFC3] shrink-0">
+                            {badge}
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Specialization & Experience */}
+                      <div className="flex flex-wrap items-center gap-2 mb-4">
+                        <span className="text-xs font-bold text-[#0F4C81] bg-[#EFF6FF] px-3 py-1 rounded-lg border border-[#DBEAFE]">
+                          {specialization}
                         </span>
+                        <span className="text-xs font-medium text-slate-500 bg-slate-50 px-2.5 py-1 rounded-lg border border-slate-200">
+                          {isRTL ? `خبرة ${teacher.experienceYears} سنوات` : `${teacher.experienceYears} Years Exp.`}
+                        </span>
+                      </div>
+
+                      {/* Qualifications */}
+                      {qualifications && qualifications.length > 0 && (
+                        <div className="mb-5 bg-[#F7F9FC] rounded-2xl p-4 border border-slate-100">
+                          <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                            <Award className="w-3.5 h-3.5 text-[#C59B27]" />
+                            <span>{t.teachersCertLabel}</span>
+                          </h3>
+                          <ul className="flex flex-col gap-1.5">
+                            {qualifications.map((q, i) => (
+                              <li key={i} className="text-xs text-slate-600 flex items-start gap-2">
+                                <CheckCircle2 className="w-3.5 h-3.5 text-[#0F4C81] shrink-0 mt-0.5" />
+                                <span>{q}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+
+                      {/* Philosophy Quote */}
+                      {philosophy && (
+                        <div className="mb-5 bg-[#FAFBFD] p-3.5 rounded-2xl border-s-4 border-s-[#C59B27] text-slate-700">
+                          <div className="flex items-center gap-1.5 text-xs font-bold text-slate-900 mb-1">
+                            <Quote className="w-3.5 h-3.5 text-[#C59B27]" />
+                            <span>{t.teachersApproachLabel}</span>
+                          </div>
+                          <p className="text-xs italic leading-relaxed text-slate-600">
+                            {philosophy}
+                          </p>
+                        </div>
                       )}
                     </div>
 
-                    {/* Teacher Name & Title */}
-                    <h2 className="text-lg sm:text-xl font-black text-[#0B192C] mb-1">
-                      {teacher.name[lang]}
-                    </h2>
-                    <p className="text-xs font-semibold text-slate-500 mb-4">
-                      {teacher.title[lang]} • {isRTL ? `خبرة ${teacher.experienceYears} سنوات` : `${teacher.experienceYears} Years Experience`}
-                    </p>
-
-                    {/* Qualifications */}
-                    <div className="mb-6 bg-[#F7F9FC] rounded-2xl p-4 border border-slate-100">
-                      <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider mb-2.5 flex items-center gap-1.5">
-                        <Award className="w-3.5 h-3.5 text-[#C59B27]" />
-                        <span>{t.teachersCertLabel}</span>
-                      </h3>
-                      <ul className="flex flex-col gap-2">
-                        {teacher.qualifications[lang].map((q, i) => (
-                          <li key={i} className="text-xs text-slate-600 flex items-start gap-2">
-                            <CheckCircle2 className="w-3.5 h-3.5 text-[#0F4C81] shrink-0 mt-0.5" />
-                            <span>{q}</span>
-                          </li>
-                        ))}
-                      </ul>
+                    {/* Bottom Action */}
+                    <div className="pt-4 border-t border-slate-100">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        fullWidth
+                        onClick={() => onNavigate('contact')}
+                        icon={<ArrowIcon className="w-4 h-4" />}
+                        iconPosition="end"
+                      >
+                        {isRTL ? 'طلب الدراسة مع المعلم' : 'Request Study Session'}
+                      </Button>
                     </div>
-
-                    {/* Philosophy Quote */}
-                    <div className="mb-6 bg-[#FAFBFD] p-4 rounded-2xl border-s-4 border-s-[#C59B27] text-slate-700">
-                      <div className="flex items-center gap-1.5 text-xs font-bold text-slate-900 mb-1.5">
-                        <Quote className="w-3.5 h-3.5 text-[#C59B27]" />
-                        <span>{t.teachersApproachLabel}</span>
-                      </div>
-                      <p className="text-xs italic leading-relaxed text-slate-600">
-                        {teacher.teachingPhilosophy[lang]}
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Bottom Action */}
-                  <div className="pt-4 border-t border-slate-100">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      fullWidth
-                      onClick={() => onNavigate('contact')}
-                      icon={<ArrowIcon className="w-4 h-4" />}
-                      iconPosition="end"
-                    >
-                      {isRTL ? 'طلب الدراسة مع المعلم' : 'Request Study Session'}
-                    </Button>
-                  </div>
-                </article>
-              ))}
+                  </article>
+                );
+              })}
             </div>
           ) : (
             <div className="bg-white rounded-3xl border border-slate-200 p-10 sm:p-14 text-center max-w-2xl mx-auto shadow-xs">

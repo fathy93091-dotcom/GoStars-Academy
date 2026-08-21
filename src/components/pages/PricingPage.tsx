@@ -1,11 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Container } from '../shared/Container';
 import { SectionTitle } from '../shared/SectionTitle';
 import { Badge } from '../shared/Badge';
 import { Button } from '../shared/Button';
 import { useLanguage } from '../../i18n/LanguageContext';
+import { useSiteContent } from '../../lib/SiteContentContext';
 import { AppRoute } from '../../navigation/routes';
-import { MOCK_PRICING_PLANS, MOCK_PRICING_FAQS } from '../../data/pricingData';
+import { CmsPricingPlanItem } from '../../types';
 import { 
   Check, 
   HelpCircle, 
@@ -24,24 +25,36 @@ interface PricingPageProps {
 
 export function PricingPage({ onNavigate }: PricingPageProps) {
   const { t, isRTL, lang } = useLanguage();
+  const { content } = useSiteContent();
   const ArrowIcon = isRTL ? ArrowLeft : ArrowRight;
 
   const [selectedCurrency, setSelectedCurrency] = useState<'USD' | 'SAR' | 'EGP'>('USD');
-  const [openFaqId, setOpenFaqId] = useState<string | null>(MOCK_PRICING_FAQS[0]?.id || null);
+  
+  const pricingPlans = useMemo(() => {
+    return (content.pricingPlansList || []).filter(p => p.isActive !== false);
+  }, [content.pricingPlansList]);
+
+  const pricingFaqs = useMemo(() => {
+    const all = content.faqList || [];
+    const filtered = all.filter(f => f.isActive && (f.category === 'pricing' || f.category === 'general'));
+    return filtered.length > 0 ? filtered : all.filter(f => f.isActive);
+  }, [content.faqList]);
+
+  const [openFaqId, setOpenFaqId] = useState<string | null>(pricingFaqs[0]?.id || null);
 
   const toggleFaq = (id: string) => {
     setOpenFaqId(prev => prev === id ? null : id);
   };
 
-  const formatPrice = (plan: typeof MOCK_PRICING_PLANS[0]) => {
+  const formatPrice = (plan: CmsPricingPlanItem) => {
     switch (selectedCurrency) {
       case 'SAR':
-        return `${plan.priceSAR} ر.س`;
+        return `${plan.priceSar || 0} ر.س`;
       case 'EGP':
-        return `${plan.priceEGP} ج.م`;
+        return `${plan.priceEgp || 0} ج.م`;
       case 'USD':
       default:
-        return `$${plan.priceUSD}`;
+        return `$${plan.priceUsd || 0}`;
     }
   };
 
@@ -102,84 +115,122 @@ export function PricingPage({ onNavigate }: PricingPageProps) {
       {/* Pricing Cards Grid */}
       <section>
         <Container size="lg">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-stretch">
-            {MOCK_PRICING_PLANS.map((plan) => {
-              const isPopular = plan.popular;
+          {pricingPlans.length > 0 ? (
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-stretch">
+              {pricingPlans.map((plan) => {
+                const isPopular = plan.isPopular;
+                const name = lang === 'ar' ? plan.nameAr : (plan.nameEn || plan.nameAr);
+                const badge = lang === 'ar' ? plan.badgeAr : (plan.badgeEn || plan.badgeAr);
+                const targetAudience = lang === 'ar' ? plan.targetAudienceAr : (plan.targetAudienceEn || plan.targetAudienceAr);
+                const period = lang === 'ar' ? (plan.periodAr || t.planDurationMonthly) : (plan.periodEn || t.planDurationMonthly);
+                const description = lang === 'ar' ? plan.descriptionAr : (plan.descriptionEn || plan.descriptionAr);
+                const features = lang === 'ar' ? plan.featuresAr : (plan.featuresEn || plan.featuresAr);
+                const ctaText = lang === 'ar' ? (plan.ctaTextAr || t.ctaRegister) : (plan.ctaTextEn || t.ctaRegister);
 
-              return (
-                <div
-                  key={plan.id}
-                  className={`relative rounded-3xl p-8 flex flex-col justify-between text-start transition-all ${
-                    isPopular
-                      ? 'bg-white border-2 border-[#0F4C81] shadow-lg ring-4 ring-[#0F4C81]/10 -translate-y-1'
-                      : 'bg-white border border-[#E2E8F0] shadow-xs'
-                  }`}
-                >
-                  {isPopular && plan.badge && (
-                    <div className="absolute -top-3.5 start-8">
-                      <span className="bg-[#0F4C81] text-white text-xs font-black px-3.5 py-1 rounded-full shadow-xs uppercase tracking-wider">
-                        {plan.badge[lang]}
-                      </span>
-                    </div>
-                  )}
-
-                  <div>
-                    {/* Title & Target */}
-                    <div className="mb-4">
-                      <h3 className="text-xl font-black text-[#0B192C] mb-1">
-                        {plan.name[lang]}
-                      </h3>
-                      <p className="text-xs text-slate-500 font-medium">
-                        {plan.target[lang]}
-                      </p>
-                    </div>
-
-                    {/* Price display */}
-                    <div className="flex items-baseline gap-1 my-6 pb-6 border-b border-slate-100">
-                      <span className="text-3xl sm:text-4xl font-black text-[#0B192C]">
-                        {formatPrice(plan)}
-                      </span>
-                      <span className="text-xs sm:text-sm font-semibold text-slate-500">
-                        / {t.planDurationMonthly}
-                      </span>
-                    </div>
-
-                    {/* Description */}
-                    <p className="text-xs sm:text-sm text-slate-600 leading-relaxed mb-6">
-                      {plan.description[lang]}
-                    </p>
-
-                    {/* Features list */}
-                    <div className="space-y-3 mb-8">
-                      <span className="text-xs font-bold uppercase tracking-wider text-slate-400 block mb-2">
-                        {isRTL ? 'المزايا المتضمنة:' : 'What is included:'}
-                      </span>
-                      {plan.features[lang].map((feature, i) => (
-                        <div key={i} className="flex items-start gap-2.5 text-xs sm:text-sm text-slate-700">
-                          <div className="w-4 h-4 rounded-full bg-[#EFF6FF] text-[#0F4C81] flex items-center justify-center shrink-0 mt-0.5">
-                            <Check className="w-3 h-3 stroke-[3]" />
-                          </div>
-                          <span>{feature}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Button */}
-                  <Button
-                    variant={isPopular ? 'primary' : 'outline'}
-                    size="md"
-                    fullWidth
-                    onClick={() => onNavigate('contact')}
-                    icon={<ArrowIcon className="w-4 h-4" />}
-                    iconPosition="end"
+                return (
+                  <div
+                    key={plan.id}
+                    className={`relative rounded-3xl p-8 flex flex-col justify-between text-start transition-all ${
+                      isPopular
+                        ? 'bg-white border-2 border-[#0F4C81] shadow-lg ring-4 ring-[#0F4C81]/10 -translate-y-1'
+                        : 'bg-white border border-[#E2E8F0] shadow-xs'
+                    }`}
                   >
-                    {t.ctaRegister}
-                  </Button>
-                </div>
-              );
-            })}
-          </div>
+                    {badge && (
+                      <div className="absolute -top-3.5 start-8">
+                        <span className="bg-[#0F4C81] text-white text-xs font-black px-3.5 py-1 rounded-full shadow-xs uppercase tracking-wider">
+                          {badge}
+                        </span>
+                      </div>
+                    )}
+
+                    <div>
+                      {/* Title & Target */}
+                      <div className="mb-4">
+                        <h3 className="text-xl font-black text-[#0B192C] mb-1">
+                          {name}
+                        </h3>
+                        {targetAudience && (
+                          <p className="text-xs text-slate-500 font-medium">
+                            {targetAudience}
+                          </p>
+                        )}
+                      </div>
+
+                      {/* Price display */}
+                      <div className="flex items-baseline gap-1 my-6 pb-6 border-b border-slate-100">
+                        <span className="text-3xl sm:text-4xl font-black text-[#0B192C]">
+                          {formatPrice(plan)}
+                        </span>
+                        <span className="text-xs sm:text-sm font-semibold text-slate-500">
+                          / {period}
+                        </span>
+                      </div>
+
+                      {/* Description */}
+                      {description && (
+                        <p className="text-xs sm:text-sm text-slate-600 leading-relaxed mb-6">
+                          {description}
+                        </p>
+                      )}
+
+                      {/* Features list */}
+                      {features && features.length > 0 && (
+                        <div className="space-y-3 mb-8">
+                          <span className="text-xs font-bold uppercase tracking-wider text-slate-400 block mb-2">
+                            {isRTL ? 'المزايا المتضمنة:' : 'What is included:'}
+                          </span>
+                          {features.map((feature, i) => (
+                            <div key={i} className="flex items-start gap-2.5 text-xs sm:text-sm text-slate-700">
+                              <div className="w-4 h-4 rounded-full bg-[#EFF6FF] text-[#0F4C81] flex items-center justify-center shrink-0 mt-0.5">
+                                <Check className="w-3 h-3 stroke-[3]" />
+                              </div>
+                              <span>{feature}</span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Button */}
+                    <Button
+                      variant={isPopular ? 'primary' : 'outline'}
+                      size="md"
+                      fullWidth
+                      onClick={() => onNavigate('contact')}
+                      icon={<ArrowIcon className="w-4 h-4" />}
+                      iconPosition="end"
+                    >
+                      {ctaText}
+                    </Button>
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="bg-white rounded-3xl border border-slate-200 p-10 sm:p-14 text-center max-w-2xl mx-auto shadow-xs">
+              <div className="w-16 h-16 rounded-2xl bg-amber-50 text-[#C59B27] flex items-center justify-center mx-auto mb-4 border border-amber-200">
+                <Sparkles className="w-8 h-8" />
+              </div>
+              <h3 className="text-xl font-bold text-[#0B192C] mb-2">
+                {isRTL ? 'باقات الاشتراك قيد التحديث' : 'Pricing Plans Updating'}
+              </h3>
+              <p className="text-sm text-slate-600 leading-relaxed mb-6">
+                {isRTL
+                  ? 'يمكنك التواصل معنا مباشرة لتصميم باقة مخصصة تلائم عدد الحصص والمواد لأبنائك.'
+                  : 'Contact us directly to tailor a customized learning schedule and package for your family.'}
+              </p>
+              <Button
+                variant="gold"
+                size="md"
+                onClick={() => onNavigate('contact')}
+                icon={<ArrowIcon className="w-4 h-4" />}
+                iconPosition="end"
+              >
+                {t.ctaRegister}
+              </Button>
+            </div>
+          )}
 
           {/* Guarantee Note */}
           <div className="mt-8 bg-[#F7F9FC] rounded-2xl border border-slate-200 p-4 text-center max-w-2xl mx-auto flex items-center justify-center gap-2 text-xs sm:text-sm text-slate-600">
@@ -218,50 +269,54 @@ export function PricingPage({ onNavigate }: PricingPageProps) {
       </section>
 
       {/* Pricing FAQs */}
-      <section>
-        <Container size="md">
-          <SectionTitle
-            title={t.pricingFaqTitle}
-            subtitle={t.pricingFaqSubtitle}
-            badge={isRTL ? 'إجابات مباشرة' : 'FAQ'}
-          />
+      {pricingFaqs.length > 0 && (
+        <section>
+          <Container size="md">
+            <SectionTitle
+              title={t.pricingFaqTitle}
+              subtitle={t.pricingFaqSubtitle}
+              badge={isRTL ? 'إجابات مباشرة' : 'FAQ'}
+            />
 
-          <div className="space-y-4">
-            {MOCK_PRICING_FAQS.map((faq) => {
-              const isOpen = openFaqId === faq.id;
+            <div className="space-y-4">
+              {pricingFaqs.map((faq) => {
+                const isOpen = openFaqId === faq.id;
+                const question = lang === 'ar' ? faq.questionAr : (faq.questionEn || faq.questionAr);
+                const answer = lang === 'ar' ? faq.answerAr : (faq.answerEn || faq.answerAr);
 
-              return (
-                <div
-                  key={faq.id}
-                  className="bg-white rounded-2xl border border-[#E2E8F0] overflow-hidden transition-colors"
-                >
-                  <button
-                    onClick={() => toggleFaq(faq.id)}
-                    className="w-full px-6 py-5 flex items-center justify-between text-start gap-4 cursor-pointer hover:bg-slate-50"
+                return (
+                  <div
+                    key={faq.id}
+                    className="bg-white rounded-2xl border border-[#E2E8F0] overflow-hidden transition-colors"
                   >
-                    <span className="font-bold text-sm sm:text-base text-[#0B192C]">
-                      {faq.question[lang]}
-                    </span>
-                    <div className="w-8 h-8 rounded-full bg-slate-100 text-slate-600 flex items-center justify-center shrink-0">
-                      {isOpen ? (
-                        <ChevronUp className="w-4 h-4" />
-                      ) : (
-                        <ChevronDown className="w-4 h-4" />
-                      )}
-                    </div>
-                  </button>
+                    <button
+                      onClick={() => toggleFaq(faq.id)}
+                      className="w-full px-6 py-5 flex items-center justify-between text-start gap-4 cursor-pointer hover:bg-slate-50"
+                    >
+                      <span className="font-bold text-sm sm:text-base text-[#0B192C]">
+                        {question}
+                      </span>
+                      <div className="w-8 h-8 rounded-full bg-slate-100 text-slate-600 flex items-center justify-center shrink-0">
+                        {isOpen ? (
+                          <ChevronUp className="w-4 h-4" />
+                        ) : (
+                          <ChevronDown className="w-4 h-4" />
+                        )}
+                      </div>
+                    </button>
 
-                  {isOpen && (
-                    <div className="px-6 pb-6 pt-1 text-xs sm:text-sm text-slate-600 leading-relaxed border-t border-slate-100 text-start">
-                      {faq.answer[lang]}
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        </Container>
-      </section>
+                    {isOpen && (
+                      <div className="px-6 pb-6 pt-1 text-xs sm:text-sm text-slate-600 leading-relaxed border-t border-slate-100 text-start">
+                        {answer}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </Container>
+        </section>
+      )}
     </div>
   );
 }
