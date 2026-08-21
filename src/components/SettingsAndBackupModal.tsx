@@ -16,7 +16,6 @@ import {
   RefreshCw
 } from "lucide-react";
 import { AppSettings, GoStarsBackupData, SubjectAiInstruction } from "../types";
-import { sanitizeTeacherName } from "../lib/storage";
 import { useAuth } from "../lib/AuthContext";
 import { executeSafeMigration, getLocalMigrationStatus, MigrationStatus } from "../lib/firebaseMigration";
 import { MigrationSummary } from "../lib/centralDataEngine";
@@ -42,7 +41,7 @@ export const SettingsAndBackupModal: React.FC<SettingsAndBackupModalProps> = ({
 
   const { user, profile } = useAuth();
   const [activeTab, setActiveTab] = useState<"general" | "ai" | "backup" | "sync">("general");
-  const [teacherName, setTeacherName] = useState(sanitizeTeacherName(settings.teacherName));
+  const [teacherName, setTeacherName] = useState(settings.teacherName || "");
   const [subject, setSubject] = useState(settings.defaultSubject || "");
   const [lang, setLang] = useState<"ar" | "en">(settings.preferredLanguage || "ar");
   const [generalAiInstructions, setGeneralAiInstructions] = useState(

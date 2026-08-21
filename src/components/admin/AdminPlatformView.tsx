@@ -158,6 +158,11 @@ export const AdminPlatformView: React.FC<AdminPlatformViewProps> = ({ onNavigate
     await loadAllAdminData();
   };
 
+  const handleDeleteStudent = async (studentId: string) => {
+    await AdminDataEngine.deleteStudent(studentId);
+    await loadAllAdminData();
+  };
+
   // Handlers for Groups
   const handleSaveGroup = async (group: CentralGroup, whatsappLink?: string) => {
     await AdminDataEngine.saveGroup(group, whatsappLink);
@@ -396,6 +401,7 @@ export const AdminPlatformView: React.FC<AdminPlatformViewProps> = ({ onNavigate
             teachers={teachers}
             groups={groups}
             onSaveStudent={handleSaveStudent}
+            onDeleteStudent={handleDeleteStudent}
             canManage={canManageStudents}
             canViewSensitive={canViewSensitiveContacts}
           />

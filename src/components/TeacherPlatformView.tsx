@@ -18,6 +18,7 @@ import {
 import { StorageEngine } from "../lib/storage";
 import { useAuth } from "../lib/AuthContext";
 import { syncReportToCentralFirestore, syncPaymentToCentralFirestore } from "../lib/centralDataEngine";
+import { subscribeToUserData, saveUserDataToFirestore } from "../lib/firebase";
 import { Header, NavTab } from "./Header";
 import { MobileBottomNav } from "./MobileBottomNav";
 import { DashboardView } from "./DashboardView";
@@ -41,16 +42,16 @@ export const TeacherPlatformView: React.FC<TeacherPlatformViewProps> = ({
   const { user } = useAuth();
   const currentTeacherId = user?.uid || "guest_teacher";
 
-  // 1. Core State loaded from StorageEngine
-  const [settings, setSettings] = useState<AppSettings>(() => StorageEngine.getSettings());
-  const [students, setStudents] = useState<Student[]>(() => StorageEngine.getStudents());
-  const [groups, setGroups] = useState<Group[]>(() => StorageEngine.getGroups());
-  const [privateLessons, setPrivateLessons] = useState<PrivateLesson[]>(() => StorageEngine.getPrivateLessons());
-  const [lessons, setLessons] = useState<Lesson[]>(() => StorageEngine.getLessons());
-  const [attendanceRecords, setAttendanceRecords] = useState<AttendanceRecord[]>(() => StorageEngine.getAttendanceRecords());
-  const [examRecords, setExamRecords] = useState<ExamRecord[]>(() => StorageEngine.getExams());
-  const [paymentTransactions, setPaymentTransactions] = useState<PaymentTransaction[]>(() => StorageEngine.getPayments());
-  const [reports, setReports] = useState<GeneratedReport[]>(() => StorageEngine.getReports());
+  // 1. Core State loaded from StorageEngine scoped to current teacher
+  const [settings, setSettings] = useState<AppSettings>(() => StorageEngine.getSettings(currentTeacherId));
+  const [students, setStudents] = useState<Student[]>(() => StorageEngine.getStudents(currentTeacherId));
+  const [groups, setGroups] = useState<Group[]>(() => StorageEngine.getGroups(currentTeacherId));
+  const [privateLessons, setPrivateLessons] = useState<PrivateLesson[]>(() => StorageEngine.getPrivateLessons(currentTeacherId));
+  const [lessons, setLessons] = useState<Lesson[]>(() => StorageEngine.getLessons(currentTeacherId));
+  const [attendanceRecords, setAttendanceRecords] = useState<AttendanceRecord[]>(() => StorageEngine.getAttendanceRecords(currentTeacherId));
+  const [examRecords, setExamRecords] = useState<ExamRecord[]>(() => StorageEngine.getExams(currentTeacherId));
+  const [paymentTransactions, setPaymentTransactions] = useState<PaymentTransaction[]>(() => StorageEngine.getPayments(currentTeacherId));
+  const [reports, setReports] = useState<GeneratedReport[]>(() => StorageEngine.getReports(currentTeacherId));
 
   // UI State
   const [activeTab, setActiveTab] = useState<NavTab>("home");
@@ -63,42 +64,94 @@ export const TeacherPlatformView: React.FC<TeacherPlatformViewProps> = ({
 
   const isArabic = settings.preferredLanguage === "ar";
 
-  // 2. Persist to storage whenever state updates
+  // Subscribe to real-time Cloud Firestore updates for this teacher
   useEffect(() => {
-    StorageEngine.saveSettings(settings);
-  }, [settings]);
+    if (!user?.uid) return;
+
+    const unsubscribe = subscribeToUserData(user.uid, cloudData => {
+      if (cloudData) {
+        if (cloudData.settings) setSettings(cloudData.settings);
+        if (Array.isArray(cloudData.students)) setStudents(cloudData.students);
+        if (Array.isArray(cloudData.groups)) setGroups(cloudData.groups);
+        if (Array.isArray(cloudData.privateLessons)) setPrivateLessons(cloudData.privateLessons);
+        if (Array.isArray(cloudData.lessons)) setLessons(cloudData.lessons);
+        if (Array.isArray(cloudData.attendanceRecords)) setAttendanceRecords(cloudData.attendanceRecords);
+        if (Array.isArray(cloudData.examRecords)) setExamRecords(cloudData.examRecords);
+        if (Array.isArray(cloudData.paymentTransactions)) setPaymentTransactions(cloudData.paymentTransactions);
+        if (Array.isArray(cloudData.reports)) setReports(cloudData.reports);
+      }
+    });
+
+    return () => unsubscribe();
+  }, [user?.uid]);
+
+  // 2. Persist to storage whenever state updates (Local Storage + Cloud Firestore)
+  useEffect(() => {
+    StorageEngine.saveSettings(settings, currentTeacherId);
+  }, [settings, currentTeacherId]);
 
   useEffect(() => {
-    StorageEngine.saveStudents(students);
-  }, [students]);
+    StorageEngine.saveStudents(students, currentTeacherId);
+  }, [students, currentTeacherId]);
 
   useEffect(() => {
-    StorageEngine.saveGroups(groups);
-  }, [groups]);
+    StorageEngine.saveGroups(groups, currentTeacherId);
+  }, [groups, currentTeacherId]);
 
   useEffect(() => {
-    StorageEngine.savePrivateLessons(privateLessons);
-  }, [privateLessons]);
+    StorageEngine.savePrivateLessons(privateLessons, currentTeacherId);
+  }, [privateLessons, currentTeacherId]);
 
   useEffect(() => {
-    StorageEngine.saveLessons(lessons);
-  }, [lessons]);
+    StorageEngine.saveLessons(lessons, currentTeacherId);
+  }, [lessons, currentTeacherId]);
 
   useEffect(() => {
-    StorageEngine.saveAttendanceRecords(attendanceRecords);
-  }, [attendanceRecords]);
+    StorageEngine.saveAttendanceRecords(attendanceRecords, currentTeacherId);
+  }, [attendanceRecords, currentTeacherId]);
 
   useEffect(() => {
-    StorageEngine.saveExams(examRecords);
-  }, [examRecords]);
+    StorageEngine.saveExams(examRecords, currentTeacherId);
+  }, [examRecords, currentTeacherId]);
 
   useEffect(() => {
-    StorageEngine.savePayments(paymentTransactions);
-  }, [paymentTransactions]);
+    StorageEngine.savePayments(paymentTransactions, currentTeacherId);
+  }, [paymentTransactions, currentTeacherId]);
 
   useEffect(() => {
-    StorageEngine.saveReports(reports);
-  }, [reports]);
+    StorageEngine.saveReports(reports, currentTeacherId);
+  }, [reports, currentTeacherId]);
+
+  // Auto-sync full workspace to Firestore when authenticated
+  useEffect(() => {
+    if (user?.uid) {
+      const currentWorkspace: GoStarsBackupData = {
+        version: "1.0",
+        exportedAt: new Date().toISOString(),
+        settings,
+        students,
+        groups,
+        privateLessons,
+        lessons,
+        attendanceRecords,
+        examRecords,
+        paymentTransactions,
+        reports
+      };
+      saveUserDataToFirestore(user.uid, currentWorkspace);
+    }
+  }, [
+    user?.uid,
+    settings,
+    students,
+    groups,
+    privateLessons,
+    lessons,
+    attendanceRecords,
+    examRecords,
+    paymentTransactions,
+    reports
+  ]);
 
   // 3. Handlers for Students
   const handleAddStudent = (studentData: Omit<Student, "id" | "createdAt">) => {

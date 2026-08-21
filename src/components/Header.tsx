@@ -22,7 +22,6 @@ import {
   FileText
 } from "lucide-react";
 import { AppSettings, Student, AppNotification } from "../types";
-import { sanitizeTeacherName } from "../lib/storage";
 import { User as FirebaseUser } from "../lib/firebase";
 
 export type NavTab = "home" | "groups" | "students" | "schedule" | "reports" | "finance";
@@ -136,8 +135,8 @@ export const Header: React.FC<HeaderProps> = ({
   const alertCount = activeNotifications.length;
 
   const teacherDisplayName =
-    sanitizeTeacherName(settings.teacherName) ||
-    sanitizeTeacherName(currentUser?.displayName || "") ||
+    settings.teacherName ||
+    currentUser?.displayName ||
     (isArabic ? "معلم المادة" : "Teacher");
 
   const handleDismissSingle = (id: string, e: React.MouseEvent) => {

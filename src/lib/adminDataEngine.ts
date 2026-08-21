@@ -31,35 +31,8 @@ import {
 } from "firebase/firestore";
 import { StorageEngine } from "./storage";
 
-// Default Initial Seeding for Teachers when Firestore is empty
-const INITIAL_DEMO_TEACHERS: TeacherRecord[] = [
-  {
-    id: "teacher_1",
-    authUid: "teacher_1",
-    name: "أ. محمد الأحمدي",
-    email: "m.alahmadi@gostars.edu",
-    phone: "+201011122233",
-    specialties: ["الفيزياء", "العلوم المتكاملة"],
-    assignedGroupIds: ["group_1"],
-    assignedStudentIds: ["std_1", "std_2"],
-    status: "active",
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString()
-  },
-  {
-    id: "teacher_2",
-    authUid: "teacher_2",
-    name: "أ. سارة الخالد",
-    email: "s.alkhalid@gostars.edu",
-    phone: "+201044455566",
-    specialties: ["الرياضيات", "الجبر والهندسة"],
-    assignedGroupIds: ["group_2"],
-    assignedStudentIds: ["std_3"],
-    status: "active",
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString()
-  }
-];
+// Empty Initial Teachers when Firestore is clean
+const INITIAL_DEMO_TEACHERS: TeacherRecord[] = [];
 
 export type { CombinedAdminStudent };
 
@@ -187,65 +160,58 @@ export class AdminDataEngine {
     // 1. Fetch Students from Firestore /students
     try {
       const snap = await getDocs(collection(db, "students"));
-      snap.docs.forEach(d => {
-        const data = d.data() as CentralStudent;
-        studentsMap.set(d.id, {
-          ...data,
-          id: d.id
+      if (!snap.empty) {
+        snap.docs.forEach(d => {
+          const data = d.data() as CentralStudent;
+          studentsMap.set(d.id, {
+            ...data,
+            id: d.id
+          });
         });
-      });
+      }
     } catch (err) {
-      console.warn("Notice reading /students:", err);
+      console.warn("Notice reading /students from Firestore:", err);
     }
 
     // 2. Fetch Sensitive Contacts from Firestore /sensitive_contacts (Admin/Supervisor Authorized)
     try {
       const contactSnap = await getDocs(collection(db, "sensitive_contacts"));
-      contactSnap.docs.forEach(d => {
-        const cData = d.data() as SensitiveContactRecord;
-        const student = studentsMap.get(d.id);
-        if (student) {
-          student.parentContact = cData.parentContact || student.parentContact;
-          student.studentPhone = cData.studentPhone || student.studentPhone;
-          student.whatsappGroupLink = cData.whatsappGroupLink || student.whatsappGroupLink;
-        }
-      });
+      if (!contactSnap.empty) {
+        contactSnap.docs.forEach(d => {
+          const cData = d.data() as SensitiveContactRecord;
+          const student = studentsMap.get(d.id);
+          if (student) {
+            student.parentContact = cData.parentContact || student.parentContact;
+            student.studentPhone = cData.studentPhone || student.studentPhone;
+            student.whatsappGroupLink = cData.whatsappGroupLink || student.whatsappGroupLink;
+          }
+        });
+      }
     } catch (err) {
       console.warn("Notice reading /sensitive_contacts:", err);
     }
 
-    // 3. Fallback from Local Storage if empty
-    if (studentsMap.size === 0) {
-      const localWorkspace = StorageEngine.getUserWorkspace("guest_teacher");
-      (localWorkspace.students || []).forEach(ls => {
-        studentsMap.set(ls.id, {
-          id: ls.id,
-          name: ls.fullName,
-          fullName: ls.fullName,
-          studentNumber: ls.studentNumber,
-          academicYear: ls.academicYear,
-          curriculum: ls.curriculum,
-          studyType: ls.studyType || "group",
-          status: ls.status || "active",
-          parentIds: [`parent_${ls.id}`],
-          teacherIds: ["teacher_1"],
-          groupIds: ls.groupId ? [ls.groupId] : [],
-          subject: ls.subject,
-          subjects: ls.subjects,
-          lessonCost: ls.lessonCost || 100,
-          totalPaidAmount: ls.totalPaidAmount || 0,
-          totalAttendedLessons: ls.totalAttendedLessons || 0,
-          notes: ls.notes,
-          parentContact: ls.parentContact,
-          studentPhone: ls.studentPhone,
-          whatsappGroupLink: ls.whatsappGroupLink,
-          createdAt: ls.createdAt || new Date().toISOString(),
-          updatedAt: new Date().toISOString()
+    // 3. Fallback / Merge from Persistent Local Cache
+    try {
+      const cached = localStorage.getItem("gostars_admin_students");
+      if (cached) {
+        const parsed: CombinedAdminStudent[] = JSON.parse(cached);
+        parsed.forEach(cs => {
+          if (!studentsMap.has(cs.id)) {
+            studentsMap.set(cs.id, cs);
+          }
         });
-      });
+      }
+    } catch {}
+
+    const results = Array.from(studentsMap.values());
+    if (results.length > 0) {
+      try {
+        localStorage.setItem("gostars_admin_students", JSON.stringify(results));
+      } catch {}
     }
 
-    return Array.from(studentsMap.values());
+    return results;
   }
 
   static async saveStudentWithSensitiveContacts(student: CombinedAdminStudent): Promise<void> {
@@ -304,36 +270,73 @@ export class AdminDataEngine {
     } catch (err) {
       console.warn("Notice saving student to Firestore:", err);
     }
+
+    // Save to local cache immediately to prevent any loss
+    try {
+      const current = await this.getStudentsWithSensitiveData();
+      const idx = current.findIndex(s => s.id === student.id);
+      if (idx >= 0) {
+        current[idx] = { ...current[idx], ...student, updatedAt: now };
+      } else {
+        current.unshift({ ...student, createdAt: now, updatedAt: now });
+      }
+      localStorage.setItem("gostars_admin_students", JSON.stringify(current));
+    } catch {}
+  }
+
+  static async deleteStudent(studentId: string): Promise<void> {
+    try {
+      await deleteDoc(doc(db, "students", studentId));
+      await deleteDoc(doc(db, "sensitive_contacts", studentId));
+      await deleteDoc(doc(db, "parents", `parent_${studentId}`));
+    } catch (err) {
+      console.warn("Notice deleting student in Firestore:", err);
+    }
+
+    try {
+      const current = await this.getStudentsWithSensitiveData();
+      const filtered = current.filter(s => s.id !== studentId);
+      localStorage.setItem("gostars_admin_students", JSON.stringify(filtered));
+    } catch {}
   }
 
   // ================= 3. GROUPS & CENTRAL SCHEDULE =================
 
   static async getGroups(): Promise<CentralGroup[]> {
+    const groupsMap = new Map<string, CentralGroup>();
+
     try {
       const snap = await getDocs(collection(db, "groups"));
       if (!snap.empty) {
-        return snap.docs.map(d => ({ ...d.data(), id: d.id } as CentralGroup));
+        snap.docs.forEach(d => {
+          groupsMap.set(d.id, { ...d.data(), id: d.id } as CentralGroup);
+        });
       }
     } catch (err) {
-      console.warn("Notice reading /groups:", err);
+      console.warn("Notice reading /groups from Firestore:", err);
     }
 
-    // Fallback to local workspace
-    const localWorkspace = StorageEngine.getUserWorkspace("guest_teacher");
-    return (localWorkspace.groups || []).map(g => ({
-      id: g.id,
-      name: g.name,
-      subject: g.subject,
-      teacherIds: ["teacher_1"],
-      studentIds: g.studentIds || [],
-      days: g.days || [],
-      time: g.time || "16:00",
-      durationMinutes: g.durationMinutes || 60,
-      scheduleSlots: g.scheduleSlots,
-      status: g.status || "active",
-      createdAt: g.createdAt || new Date().toISOString(),
-      updatedAt: new Date().toISOString()
-    }));
+    // Merge / Fallback from Persistent Local Cache
+    try {
+      const cached = localStorage.getItem("gostars_admin_groups");
+      if (cached) {
+        const parsed: CentralGroup[] = JSON.parse(cached);
+        parsed.forEach(cg => {
+          if (!groupsMap.has(cg.id)) {
+            groupsMap.set(cg.id, cg);
+          }
+        });
+      }
+    } catch {}
+
+    const results = Array.from(groupsMap.values());
+    if (results.length > 0) {
+      try {
+        localStorage.setItem("gostars_admin_groups", JSON.stringify(results));
+      } catch {}
+    }
+
+    return results;
   }
 
   static async saveGroup(group: CentralGroup, whatsappGroupLink?: string): Promise<void> {
@@ -358,6 +361,18 @@ export class AdminDataEngine {
     } catch (err) {
       console.warn("Notice saving group in Firestore:", err);
     }
+
+    // Cache locally immediately
+    try {
+      const current = await this.getGroups();
+      const idx = current.findIndex(g => g.id === group.id);
+      if (idx >= 0) {
+        current[idx] = payload;
+      } else {
+        current.unshift(payload);
+      }
+      localStorage.setItem("gostars_admin_groups", JSON.stringify(current));
+    } catch {}
   }
 
   static async deleteGroup(groupId: string): Promise<void> {
@@ -367,73 +382,96 @@ export class AdminDataEngine {
     } catch (err) {
       console.warn("Notice deleting group from Firestore:", err);
     }
+
+    try {
+      const current = await this.getGroups();
+      const filtered = current.filter(g => g.id !== groupId);
+      localStorage.setItem("gostars_admin_groups", JSON.stringify(filtered));
+    } catch {}
   }
 
   // ================= 4. REPORTS AUDIT HUB =================
 
   static async getCentralReports(): Promise<CentralReport[]> {
+    const reportsMap = new Map<string, CentralReport>();
+
     try {
       const snap = await getDocs(collection(db, "reports"));
       if (!snap.empty) {
-        return snap.docs
-          .map(d => ({ ...d.data(), id: d.id } as CentralReport))
-          .sort((a, b) => new Date(b.date || b.createdAt).getTime() - new Date(a.date || a.createdAt).getTime());
+        snap.docs.forEach(d => {
+          reportsMap.set(d.id, { ...d.data(), id: d.id } as CentralReport);
+        });
       }
     } catch (err) {
-      console.warn("Notice reading /reports:", err);
+      console.warn("Notice reading /reports from Firestore:", err);
     }
 
-    const localWorkspace = StorageEngine.getUserWorkspace("guest_teacher");
-    return (localWorkspace.reports || []).map(r => ({
-      id: r.id,
-      reportType: r.reportType || "individual",
-      groupId: r.groupId,
-      groupName: r.groupName,
-      studentId: r.studentId,
-      studentName: r.studentName,
-      teacherId: "teacher_1",
-      subject: r.subject,
-      lessonNumber: r.lessonNumber,
-      date: r.date,
-      attendance: r.attendance || "present",
-      homeworkStatus: r.homeworkStatus || "done",
-      teacherNotes: r.teacherNotes,
-      aiInstructions: r.aiInstructions,
-      reportText: r.reportText || r.generatedText,
-      generatedText: r.generatedText || r.reportText,
-      createdAt: r.date || new Date().toISOString(),
-      updatedAt: new Date().toISOString()
-    }));
+    // Fallback from Persistent Local Cache
+    try {
+      const cached = localStorage.getItem("gostars_admin_reports");
+      if (cached) {
+        const parsed: CentralReport[] = JSON.parse(cached);
+        parsed.forEach(cr => {
+          if (!reportsMap.has(cr.id)) {
+            reportsMap.set(cr.id, cr);
+          }
+        });
+      }
+    } catch {}
+
+    const results = Array.from(reportsMap.values()).sort(
+      (a, b) => new Date(b.date || b.createdAt).getTime() - new Date(a.date || a.createdAt).getTime()
+    );
+
+    if (results.length > 0) {
+      try {
+        localStorage.setItem("gostars_admin_reports", JSON.stringify(results));
+      } catch {}
+    }
+
+    return results;
   }
 
   // ================= 5. ACADEMY FINANCE OVERVIEW =================
 
   static async getPayments(): Promise<CentralPayment[]> {
+    const paymentsMap = new Map<string, CentralPayment>();
+
     try {
       const snap = await getDocs(collection(db, "payments"));
       if (!snap.empty) {
-        return snap.docs
-          .map(d => ({ ...d.data(), id: d.id } as CentralPayment))
-          .sort((a, b) => new Date(b.date || b.createdAt).getTime() - new Date(a.date || a.createdAt).getTime());
+        snap.docs.forEach(d => {
+          paymentsMap.set(d.id, { ...d.data(), id: d.id } as CentralPayment);
+        });
       }
     } catch (err) {
-      console.warn("Notice reading /payments:", err);
+      console.warn("Notice reading /payments from Firestore:", err);
     }
 
-    const localWorkspace = StorageEngine.getUserWorkspace("guest_teacher");
-    return (localWorkspace.paymentTransactions || []).map(p => ({
-      id: p.id,
-      studentId: p.studentId,
-      studentName: p.studentName,
-      teacherId: "teacher_1",
-      amount: p.amount,
-      date: p.date,
-      paymentMethod: p.paymentMethod || "كاش",
-      receiptNumber: p.receiptNumber || p.id,
-      notes: p.notes,
-      createdAt: p.date || new Date().toISOString(),
-      updatedAt: new Date().toISOString()
-    }));
+    // Fallback from Persistent Local Cache
+    try {
+      const cached = localStorage.getItem("gostars_admin_payments");
+      if (cached) {
+        const parsed: CentralPayment[] = JSON.parse(cached);
+        parsed.forEach(cp => {
+          if (!paymentsMap.has(cp.id)) {
+            paymentsMap.set(cp.id, cp);
+          }
+        });
+      }
+    } catch {}
+
+    const results = Array.from(paymentsMap.values()).sort(
+      (a, b) => new Date(b.date || b.createdAt).getTime() - new Date(a.date || a.createdAt).getTime()
+    );
+
+    if (results.length > 0) {
+      try {
+        localStorage.setItem("gostars_admin_payments", JSON.stringify(results));
+      } catch {}
+    }
+
+    return results;
   }
 
   static async calculateAcademyFinanceSummary(): Promise<AcademyFinanceSummary> {
@@ -498,26 +536,8 @@ export class AdminDataEngine {
       console.warn("Notice reading supervisors:", err);
     }
 
-    // Default supervisor stub if empty
-    return [
-      {
-        uid: "supervisor_1",
-        name: "أ. خالد النجار (مشرف عام)",
-        email: "k.elnaggar@gostars.edu",
-        role: "supervisor",
-        status: "active",
-        permissions: {
-          canManageTeachers: false,
-          canManageStudents: true,
-          canViewSensitiveContacts: true,
-          canManageGroups: true,
-          canViewReports: true,
-          canManageFinance: false
-        },
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      }
-    ];
+    // Return empty array when no supervisors configured yet
+    return [];
   }
 
   static async saveSupervisorPermissions(

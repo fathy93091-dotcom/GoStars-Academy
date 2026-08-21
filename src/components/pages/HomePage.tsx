@@ -368,39 +368,62 @@ export function HomePage({ onNavigate }: HomePageProps) {
               </Button>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {topHonorStars.map((star) => (
-                <div
-                  key={star.id}
-                  className="bg-white/10 backdrop-blur-xs border border-white/15 rounded-2xl p-6 sm:p-7 text-start flex flex-col justify-between"
-                >
-                  <div>
-                    <div className="flex items-center justify-between gap-3 mb-4">
-                      <span className="text-sm font-bold text-amber-300 bg-amber-400/10 px-3 py-1 rounded-lg border border-amber-400/20">
-                        {star.categoryBadge[lang]}
-                      </span>
-                      <span className="text-xs text-slate-300 font-medium flex items-center gap-1.5">
-                        <span>{star.country.code}</span>
-                        <span>{star.country[lang]}</span>
-                      </span>
+            {topHonorStars.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {topHonorStars.map((star) => (
+                  <div
+                    key={star.id}
+                    className="bg-white/10 backdrop-blur-xs border border-white/15 rounded-2xl p-6 sm:p-7 text-start flex flex-col justify-between"
+                  >
+                    <div>
+                      <div className="flex items-center justify-between gap-3 mb-4">
+                        <span className="text-sm font-bold text-amber-300 bg-amber-400/10 px-3 py-1 rounded-lg border border-amber-400/20">
+                          {star.categoryBadge[lang]}
+                        </span>
+                        <span className="text-xs text-slate-300 font-medium flex items-center gap-1.5">
+                          <span>{star.country.code}</span>
+                          <span>{star.country[lang]}</span>
+                        </span>
+                      </div>
+
+                      <h3 className="text-lg font-bold text-white mb-2">
+                        {star.studentDisplayName[lang]}
+                      </h3>
+                      <p className="text-xs sm:text-sm text-slate-300 leading-relaxed mb-4">
+                        {star.achievementDetail[lang]}
+                      </p>
                     </div>
 
-                    <h3 className="text-lg font-bold text-white mb-2">
-                      {star.studentDisplayName[lang]}
-                    </h3>
-                    <p className="text-xs sm:text-sm text-slate-300 leading-relaxed mb-4">
-                      {star.achievementDetail[lang]}
-                    </p>
+                    <div className="pt-4 border-t border-white/10">
+                      <p className="text-xs italic text-amber-200/90 leading-relaxed">
+                        {star.teacherPraise[lang]}
+                      </p>
+                    </div>
                   </div>
-
-                  <div className="pt-4 border-t border-white/10">
-                    <p className="text-xs italic text-amber-200/90 leading-relaxed">
-                      {star.teacherPraise[lang]}
-                    </p>
-                  </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            ) : (
+              <div className="bg-white/10 backdrop-blur-xs border border-white/15 rounded-2xl p-8 sm:p-10 text-center max-w-xl mx-auto">
+                <Sparkles className="w-10 h-10 text-amber-300 mx-auto mb-3" />
+                <h3 className="text-lg sm:text-xl font-bold text-white mb-2">
+                  {isRTL ? 'بيئة تصنع الأبطال وترعى الحفاظ المتميزين' : 'An Environment That Nurtures Quranic Champions'}
+                </h3>
+                <p className="text-xs sm:text-sm text-slate-300 leading-relaxed mb-6">
+                  {isRTL
+                    ? 'انضم إلينا اليوم وابدأ رحلة حفظ وتلاوة كتاب الله واللغة العربية بإشراف مباشر من نخبة المعلمين المجازين.'
+                    : 'Join us today and begin your Quran memorization and Arabic journey under the guidance of certified educators.'}
+                </p>
+                <Button
+                  variant="gold"
+                  size="md"
+                  onClick={() => onNavigate('contact')}
+                  icon={<ArrowIcon className="w-4 h-4" />}
+                  iconPosition="end"
+                >
+                  {isRTL ? 'احجز جلستك التجريبية' : 'Book Assessment Session'}
+                </Button>
+              </div>
+            )}
           </Container>
         </section>
       )}

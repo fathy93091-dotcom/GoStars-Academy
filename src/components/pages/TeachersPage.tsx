@@ -89,78 +89,105 @@ export function TeachersPage({ onNavigate }: TeachersPageProps) {
       {/* Teachers Showcase Cards */}
       <section>
         <Container size="lg">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {filteredTeachers.map((teacher) => (
-              <article
-                key={teacher.id}
-                className="bg-white rounded-3xl border border-[#E2E8F0] p-6 sm:p-7 flex flex-col justify-between text-start hover:border-[#0F4C81]/40 hover:shadow-xs transition-all"
-              >
-                <div>
-                  {/* Top Badge and Experience */}
-                  <div className="flex items-center justify-between gap-2 mb-4">
-                    <span className="text-xs font-bold text-[#0F4C81] bg-[#EFF6FF] px-3 py-1 rounded-lg border border-[#DBEAFE]">
-                      {teacher.specializationLabel[lang]}
-                    </span>
-
-                    {teacher.featuredTag && (
-                      <span className="text-[11px] font-bold text-[#7E5B10] bg-[#FDF7E2] px-2.5 py-0.5 rounded-md border border-[#FEEFC3]">
-                        {teacher.featuredTag[lang]}
+          {filteredTeachers.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {filteredTeachers.map((teacher) => (
+                <article
+                  key={teacher.id}
+                  className="bg-white rounded-3xl border border-[#E2E8F0] p-6 sm:p-7 flex flex-col justify-between text-start hover:border-[#0F4C81]/40 hover:shadow-xs transition-all"
+                >
+                  <div>
+                    {/* Top Badge and Experience */}
+                    <div className="flex items-center justify-between gap-2 mb-4">
+                      <span className="text-xs font-bold text-[#0F4C81] bg-[#EFF6FF] px-3 py-1 rounded-lg border border-[#DBEAFE]">
+                        {teacher.specializationLabel[lang]}
                       </span>
-                    )}
-                  </div>
 
-                  {/* Teacher Name & Title */}
-                  <h2 className="text-lg sm:text-xl font-black text-[#0B192C] mb-1">
-                    {teacher.name[lang]}
-                  </h2>
-                  <p className="text-xs font-semibold text-slate-500 mb-4">
-                    {teacher.title[lang]} • {isRTL ? `خبرة ${teacher.experienceYears} سنوات` : `${teacher.experienceYears} Years Experience`}
-                  </p>
-
-                  {/* Qualifications */}
-                  <div className="mb-6 bg-[#F7F9FC] rounded-2xl p-4 border border-slate-100">
-                    <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider mb-2.5 flex items-center gap-1.5">
-                      <Award className="w-3.5 h-3.5 text-[#C59B27]" />
-                      <span>{t.teachersCertLabel}</span>
-                    </h3>
-                    <ul className="flex flex-col gap-2">
-                      {teacher.qualifications[lang].map((q, i) => (
-                        <li key={i} className="text-xs text-slate-600 flex items-start gap-2">
-                          <CheckCircle2 className="w-3.5 h-3.5 text-[#0F4C81] shrink-0 mt-0.5" />
-                          <span>{q}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-
-                  {/* Philosophy Quote */}
-                  <div className="mb-6 bg-[#FAFBFD] p-4 rounded-2xl border-s-4 border-s-[#C59B27] text-slate-700">
-                    <div className="flex items-center gap-1.5 text-xs font-bold text-slate-900 mb-1.5">
-                      <Quote className="w-3.5 h-3.5 text-[#C59B27]" />
-                      <span>{t.teachersApproachLabel}</span>
+                      {teacher.featuredTag && (
+                        <span className="text-[11px] font-bold text-[#7E5B10] bg-[#FDF7E2] px-2.5 py-0.5 rounded-md border border-[#FEEFC3]">
+                          {teacher.featuredTag[lang]}
+                        </span>
+                      )}
                     </div>
-                    <p className="text-xs italic leading-relaxed text-slate-600">
-                      {teacher.teachingPhilosophy[lang]}
-                    </p>
-                  </div>
-                </div>
 
-                {/* Bottom Action */}
-                <div className="pt-4 border-t border-slate-100">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    fullWidth
-                    onClick={() => onNavigate('contact')}
-                    icon={<ArrowIcon className="w-4 h-4" />}
-                    iconPosition="end"
-                  >
-                    {isRTL ? 'طلب الدراسة مع المعلم' : 'Request Study Session'}
-                  </Button>
-                </div>
-              </article>
-            ))}
-          </div>
+                    {/* Teacher Name & Title */}
+                    <h2 className="text-lg sm:text-xl font-black text-[#0B192C] mb-1">
+                      {teacher.name[lang]}
+                    </h2>
+                    <p className="text-xs font-semibold text-slate-500 mb-4">
+                      {teacher.title[lang]} • {isRTL ? `خبرة ${teacher.experienceYears} سنوات` : `${teacher.experienceYears} Years Experience`}
+                    </p>
+
+                    {/* Qualifications */}
+                    <div className="mb-6 bg-[#F7F9FC] rounded-2xl p-4 border border-slate-100">
+                      <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider mb-2.5 flex items-center gap-1.5">
+                        <Award className="w-3.5 h-3.5 text-[#C59B27]" />
+                        <span>{t.teachersCertLabel}</span>
+                      </h3>
+                      <ul className="flex flex-col gap-2">
+                        {teacher.qualifications[lang].map((q, i) => (
+                          <li key={i} className="text-xs text-slate-600 flex items-start gap-2">
+                            <CheckCircle2 className="w-3.5 h-3.5 text-[#0F4C81] shrink-0 mt-0.5" />
+                            <span>{q}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+
+                    {/* Philosophy Quote */}
+                    <div className="mb-6 bg-[#FAFBFD] p-4 rounded-2xl border-s-4 border-s-[#C59B27] text-slate-700">
+                      <div className="flex items-center gap-1.5 text-xs font-bold text-slate-900 mb-1.5">
+                        <Quote className="w-3.5 h-3.5 text-[#C59B27]" />
+                        <span>{t.teachersApproachLabel}</span>
+                      </div>
+                      <p className="text-xs italic leading-relaxed text-slate-600">
+                        {teacher.teachingPhilosophy[lang]}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Bottom Action */}
+                  <div className="pt-4 border-t border-slate-100">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      fullWidth
+                      onClick={() => onNavigate('contact')}
+                      icon={<ArrowIcon className="w-4 h-4" />}
+                      iconPosition="end"
+                    >
+                      {isRTL ? 'طلب الدراسة مع المعلم' : 'Request Study Session'}
+                    </Button>
+                  </div>
+                </article>
+              ))}
+            </div>
+          ) : (
+            <div className="bg-white rounded-3xl border border-slate-200 p-10 sm:p-14 text-center max-w-2xl mx-auto shadow-xs">
+              <div className="w-16 h-16 rounded-2xl bg-amber-50 text-[#C59B27] flex items-center justify-center mx-auto mb-4 border border-amber-200">
+                <GraduationCap className="w-8 h-8" />
+              </div>
+              <h3 className="text-xl font-bold text-[#0B192C] mb-2">
+                {isRTL ? 'دليل المعلمين جاهز لاستقبال الكادر الجديد' : 'Faculty Directory Ready For New Educators'}
+              </h3>
+              <p className="text-sm text-slate-600 leading-relaxed mb-6">
+                {isRTL
+                  ? 'يتم تحديث وإضافة ملفات المعلمين والمعلمات المجازين مباشرة عبر لوحة تحكم الإدارة. يمكنك التواصل معنا لتحديد المعلم الأنسب لطفلك.'
+                  : 'Certified educators and faculty profiles are being updated via the administration dashboard. Feel free to reach out to assign the best educator for your child.'}
+              </p>
+              <div className="flex flex-wrap items-center justify-center gap-3">
+                <Button
+                  variant="gold"
+                  size="md"
+                  onClick={() => onNavigate('contact')}
+                  icon={<ArrowIcon className="w-4 h-4" />}
+                  iconPosition="end"
+                >
+                  {isRTL ? 'تواصل مع إدارة الأكاديمية' : 'Contact Academy Team'}
+                </Button>
+              </div>
+            </div>
+          )}
 
           {/* Privacy & Safety Note */}
           <div className="mt-12 bg-[#F7F9FC] rounded-2xl border border-slate-200 p-4 text-center max-w-2xl mx-auto flex items-center justify-center gap-2.5 text-xs text-slate-500">

@@ -17,7 +17,8 @@ import {
   BookOpen,
   DollarSign,
   UserCheck,
-  Link as LinkIcon
+  Link as LinkIcon,
+  Trash2
 } from "lucide-react";
 
 interface AdminStudentManagementProps {
@@ -25,6 +26,7 @@ interface AdminStudentManagementProps {
   teachers: TeacherRecord[];
   groups: CentralGroup[];
   onSaveStudent: (student: CombinedAdminStudent) => Promise<void>;
+  onDeleteStudent?: (studentId: string) => Promise<void>;
   canManage: boolean;
   canViewSensitive: boolean;
 }
@@ -34,6 +36,7 @@ export const AdminStudentManagement: React.FC<AdminStudentManagementProps> = ({
   teachers,
   groups,
   onSaveStudent,
+  onDeleteStudent,
   canManage,
   canViewSensitive
 }) => {
@@ -393,13 +396,31 @@ export const AdminStudentManagement: React.FC<AdminStudentManagementProps> = ({
                       {/* Actions */}
                       {canManage && (
                         <td className="py-3 px-4 text-center">
-                          <button
-                            onClick={() => openEditModal(student)}
-                            className="p-1.5 rounded-xl bg-slate-100 hover:bg-blue-50 text-slate-600 hover:text-blue-600 transition"
-                            title={isRTL ? "تعديل بيانات الطالب والربط" : "Edit Student Link"}
-                          >
-                            <Edit3 className="w-3.5 h-3.5" />
-                          </button>
+                          <div className="flex items-center justify-center gap-1.5">
+                            <button
+                              onClick={() => openEditModal(student)}
+                              className="p-1.5 rounded-xl bg-slate-100 hover:bg-blue-50 text-slate-600 hover:text-blue-600 transition"
+                              title={isRTL ? "تعديل بيانات الطالب والربط" : "Edit Student Link"}
+                            >
+                              <Edit3 className="w-3.5 h-3.5" />
+                            </button>
+                            {onDeleteStudent && (
+                              <button
+                                onClick={async () => {
+                                  const confirmMsg = isRTL
+                                    ? `هل أنت متأكد من حذف الطالب "${student.fullName || student.name}"؟`
+                                    : `Are you sure you want to delete student "${student.fullName || student.name}"?`;
+                                  if (window.confirm(confirmMsg)) {
+                                    await onDeleteStudent(student.id);
+                                  }
+                                }}
+                                className="p-1.5 rounded-xl bg-slate-100 hover:bg-rose-50 text-slate-400 hover:text-rose-600 transition"
+                                title={isRTL ? "حذف الطالب" : "Delete Student"}
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            )}
+                          </div>
                         </td>
                       )}
                     </tr>

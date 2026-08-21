@@ -89,7 +89,35 @@ export function HonorRollPage({ onNavigate }: HonorRollPageProps) {
         </Container>
       </section>
 
-      {/* 1. Grand Champions / Highlighted Stars Spotlight */}
+      {/* Empty State when no stars are added yet */}
+      {filteredStars.length === 0 && (
+        <section>
+          <Container size="md">
+            <div className="bg-white rounded-3xl border border-slate-200 p-10 sm:p-14 text-center shadow-xs">
+              <div className="w-16 h-16 rounded-2xl bg-amber-50 text-[#C59B27] flex items-center justify-center mx-auto mb-4 border border-amber-200">
+                <Star className="w-8 h-8 fill-amber-300 text-amber-500" />
+              </div>
+              <h3 className="text-xl sm:text-2xl font-bold text-[#0B192C] mb-3">
+                {isRTL ? 'لوحة الشرف جاهزة لاستقبال النجوم الجدد' : 'Honor Roll Ready For New Achievers'}
+              </h3>
+              <p className="text-sm text-slate-600 leading-relaxed mb-6 max-w-lg mx-auto">
+                {isRTL
+                  ? 'يتم تكريم الطلاب المتميزين في حفظ القرآن الكريم وإتقان اللغة العربية تلقائيًا عبر تقييمات المعلمين وتقارير الإنجاز الدورية.'
+                  : 'Distinguished students in Quran memorization and Arabic mastery will be honored here following their monthly teacher evaluations and milestone completions.'}
+              </p>
+              <Button
+                variant="gold"
+                size="md"
+                onClick={() => onNavigate('contact')}
+                icon={<ArrowIcon className="w-4 h-4" />}
+                iconPosition="end"
+              >
+                {isRTL ? 'سجل طفلك ليكون النجم القادم' : 'Enroll Your Child Now'}
+              </Button>
+            </div>
+          </Container>
+        </section>
+      )}
       {grandChampions.length > 0 && (
         <section>
           <Container size="lg">

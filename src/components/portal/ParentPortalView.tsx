@@ -308,40 +308,65 @@ export const ParentPortalView: React.FC<ParentPortalViewProps> = ({ onNavigate }
 
       {/* Main Content Area */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        {activeTab === "overview" && currentStudent && (
-          <ParentOverviewTab
-            student={currentStudent}
-            reports={reports}
-            evaluations={evaluations}
-            certificates={certificates}
-            onOpenReportModal={report => setActiveReportModal(report)}
-            onOpenCertificateModal={cert => setActiveCertModal(cert)}
-            onSwitchTab={tab => setActiveTab(tab)}
-          />
-        )}
+        {!currentStudent ? (
+          <div className="bg-white rounded-3xl border border-slate-200 p-10 sm:p-14 text-center max-w-xl mx-auto shadow-xs my-8">
+            <div className="w-16 h-16 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center mx-auto mb-4 border border-blue-200">
+              <GraduationCap className="w-8 h-8" />
+            </div>
+            <h3 className="text-xl sm:text-2xl font-bold text-slate-900 mb-2">
+              {isRTL ? "مرحبًا بك في بوابة الطالب وولي الأمر" : "Welcome to Student & Parent Portal"}
+            </h3>
+            <p className="text-sm text-slate-600 leading-relaxed mb-6">
+              {isRTL
+                ? "لم يتم ربط أي طالب بحسابك حتى الآن. يرجى إدخال الكود التعريفي للطالب أو رقم هاتف ولي الأمر المسجل للبدء في متابعة التقارير والشهادات."
+                : "No student is currently linked to your account. Enter the student's unique code or registered guardian phone number to track academic progress and certificates."}
+            </p>
+            <button
+              onClick={() => setIsLinkModalOpen(true)}
+              className="inline-flex items-center gap-2 px-6 py-3 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm shadow-sm transition active:scale-98 cursor-pointer"
+            >
+              <Plus className="w-4 h-4" />
+              <span>{isRTL ? "ربط كود الطالب الآن" : "Link Student by Code"}</span>
+            </button>
+          </div>
+        ) : (
+          <>
+            {activeTab === "overview" && (
+              <ParentOverviewTab
+                student={currentStudent}
+                reports={reports}
+                evaluations={evaluations}
+                certificates={certificates}
+                onOpenReportModal={report => setActiveReportModal(report)}
+                onOpenCertificateModal={cert => setActiveCertModal(cert)}
+                onSwitchTab={tab => setActiveTab(tab)}
+              />
+            )}
 
-        {activeTab === "reports" && currentStudent && (
-          <ParentReportsTab
-            student={currentStudent}
-            reports={reports}
-            onOpenReportModal={report => setActiveReportModal(report)}
-          />
-        )}
+            {activeTab === "reports" && (
+              <ParentReportsTab
+                student={currentStudent}
+                reports={reports}
+                onOpenReportModal={report => setActiveReportModal(report)}
+              />
+            )}
 
-        {activeTab === "attendance" && currentStudent && (
-          <ParentAttendanceTab
-            student={currentStudent}
-            reports={reports}
-          />
-        )}
+            {activeTab === "attendance" && (
+              <ParentAttendanceTab
+                student={currentStudent}
+                reports={reports}
+              />
+            )}
 
-        {activeTab === "certificates" && currentStudent && (
-          <ParentCertificatesTab
-            student={currentStudent}
-            evaluations={evaluations}
-            certificates={certificates}
-            onOpenCertificateModal={cert => setActiveCertModal(cert)}
-          />
+            {activeTab === "certificates" && (
+              <ParentCertificatesTab
+                student={currentStudent}
+                evaluations={evaluations}
+                certificates={certificates}
+                onOpenCertificateModal={cert => setActiveCertModal(cert)}
+              />
+            )}
+          </>
         )}
       </main>
 

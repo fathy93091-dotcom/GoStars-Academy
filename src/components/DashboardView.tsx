@@ -15,7 +15,6 @@ import {
   RotateCcw
 } from "lucide-react";
 import { Student, Lesson, AppSettings, AttendanceRecord, Group, PrivateLesson } from "../types";
-import { sanitizeTeacherName } from "../lib/storage";
 import { calculateStudentFinancials } from "../lib/financeUtils";
 
 interface DashboardViewProps {
@@ -98,9 +97,9 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               <div className="flex items-center gap-2">
                 <h1 className="text-base sm:text-lg font-black text-slate-100 tracking-tight">
                   {(() => {
-                    const clean = sanitizeTeacherName(settings.teacherName);
-                    if (!clean) return isArabic ? "أهلاً بك 👋" : "Welcome 👋";
-                    return isArabic ? `أهلاً بك، ${clean}` : `Welcome, ${clean}`;
+                    const name = settings.teacherName?.trim();
+                    if (!name) return isArabic ? "أهلاً بك 👋" : "Welcome 👋";
+                    return isArabic ? `أهلاً بك، ${name}` : `Welcome, ${name}`;
                   })()}
                 </h1>
                 <span className="hidden md:inline-block px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-300 border border-blue-400/30 text-[10px] font-bold">

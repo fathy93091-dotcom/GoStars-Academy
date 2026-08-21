@@ -201,18 +201,47 @@ export function Header({ currentRoute, onNavigate, onOpenLoginModal }: HeaderPro
           </nav>
 
           <div className="flex flex-col gap-3 pt-4 border-t border-slate-100">
-            <Button
-              variant="outline"
-              size="md"
-              fullWidth
-              onClick={handleLoginClick}
-              icon={<LogIn className="w-4 h-4 text-slate-600" />}
-            >
-              {t.navLogin}
-            </Button>
+            {user ? (
+              <Button
+                variant="primary"
+                size="md"
+                fullWidth
+                onClick={() => {
+                  setMobileMenuOpen(false);
+                  if (role === 'admin') onNavigate('admin');
+                  else if (role === 'teacher' || role === 'supervisor') onNavigate('teacher-platform');
+                  else onNavigate('portal');
+                }}
+                icon={
+                  role === 'admin' ? (
+                    <ShieldCheck className="w-4 h-4" />
+                  ) : (role === 'teacher' || role === 'supervisor') ? (
+                    <User className="w-4 h-4" />
+                  ) : (
+                    <GraduationCap className="w-4 h-4" />
+                  )
+                }
+              >
+                {role === 'admin'
+                  ? (isRTL ? 'الدخول للوحة الإدارة' : 'Enter Admin Hub')
+                  : (role === 'teacher' || role === 'supervisor')
+                  ? (isRTL ? 'الدخول لمنصة المعلم' : 'Enter Teacher Workspace')
+                  : (isRTL ? 'الدخول لبوابة ولي الأمر' : 'Enter Parent Portal')}
+              </Button>
+            ) : (
+              <Button
+                variant="outline"
+                size="md"
+                fullWidth
+                onClick={handleLoginClick}
+                icon={<LogIn className="w-4 h-4 text-slate-600" />}
+              >
+                {t.navLogin}
+              </Button>
+            )}
 
             <Button
-              variant="primary"
+              variant="secondary"
               size="md"
               fullWidth
               onClick={() => handleNavClick('contact')}

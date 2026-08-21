@@ -6,6 +6,9 @@ import {
   signInWithPopup,
   signOut,
   onAuthStateChanged,
+  setPersistence,
+  browserLocalPersistence,
+  indexedDBLocalPersistence,
   User
 } from "firebase/auth";
 import {
@@ -36,8 +39,54 @@ if (typeof window !== "undefined") {
 }
 
 export const auth = getAuth(app);
+
+// Enforce permanent browser/device persistence (LocalStorage / IndexedDB) across app reloads and phone restarts
+if (typeof window !== "undefined") {
+  try {
+    setPersistence(auth, browserLocalPersistence).catch((err) => {
+      console.warn("Auth persistence configuration note:", err);
+    });
+  } catch (err) {
+    console.warn("Auth setPersistence notice:", err);
+  }
+}
+
 export const googleProvider = new GoogleAuthProvider();
 googleProvider.setCustomParameters({ prompt: "select_account" });
+
+// Local persistent session storage keys
+export const SESSION_STORAGE_KEY = "gostars_active_session_v1";
+
+export interface SavedUserSession {
+  uid: string;
+  email: string | null;
+  displayName: string | null;
+  photoURL: string | null;
+  role: UserRole;
+  lastLogin: number;
+}
+
+export function saveSessionLocally(session: SavedUserSession): void {
+  try {
+    localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(session));
+  } catch {}
+}
+
+export function getSavedSessionLocally(): SavedUserSession | null {
+  try {
+    const raw = localStorage.getItem(SESSION_STORAGE_KEY);
+    if (raw) {
+      return JSON.parse(raw);
+    }
+  } catch {}
+  return null;
+}
+
+export function clearSavedSessionLocally(): void {
+  try {
+    localStorage.removeItem(SESSION_STORAGE_KEY);
+  } catch {}
+}
 
 // Initialize Firestore Database (default instance)
 export const db = getFirestore(app);
